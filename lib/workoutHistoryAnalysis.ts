@@ -1,5 +1,15 @@
+/**
+ * Workout History Analysis — Analyzes past workout data for coach recommendations.
+ *
+ * Processes workout history to extract difficulty trends, round-level feedback,
+ * preferred durations, and generates suggested adjustments for future sessions.
+ *
+ * @module workoutHistoryAnalysis
+ */
+
 import { WorkoutHistoryEntry } from '@/lib/types';
 
+/** Aggregated insights from analyzing recent workout history. */
 export interface HistoryInsights {
   averageDifficulty: 'too_easy' | 'just_right' | 'too_hard' | null;
   recentTrend: 'getting_easier' | 'stable' | 'getting_harder' | null;
@@ -14,11 +24,18 @@ export interface HistoryInsights {
   suggestedRoundsAdjust: number;
 }
 
+/** A single round's difficulty feedback entry from a completed workout. */
 export interface RoundFeedbackEntry {
   roundNumber: number;
   rating: number;
 }
 
+/**
+ * Analyzes workout history and returns aggregated insights for the coach engine.
+ * @param history - Array of past workout history entries.
+ * @param recentCount - Number of recent workouts to analyze (default 10).
+ * @returns Aggregated history insights including trends, feedback, and suggestions.
+ */
 export function analyzeWorkoutHistory(
   history: WorkoutHistoryEntry[],
   recentCount: number = 10
@@ -208,6 +225,12 @@ function generateSuggestionsAndAdjustments(insights: HistoryInsights): void {
   }
 }
 
+/**
+ * Adjusts a base difficulty level using history insights.
+ * @param baseDifficulty - The starting difficulty level.
+ * @param insights - History insights with suggested difficulty adjustment.
+ * @returns Adjusted difficulty level.
+ */
 export function getAdjustedDifficulty(
   baseDifficulty: 'beginner' | 'intermediate' | 'advanced',
   insights: HistoryInsights
@@ -218,14 +241,31 @@ export function getAdjustedDifficulty(
   return levels[newIndex];
 }
 
+/**
+ * Adjusts rest duration using history-derived rest multiplier.
+ * @param baseRest - Base rest duration in seconds.
+ * @param insights - History insights with suggested rest adjustment.
+ * @returns Adjusted rest duration in seconds.
+ */
 export function getAdjustedRestDuration(baseRest: number, insights: HistoryInsights): number {
   return Math.round(baseRest * insights.suggestedRestAdjust);
 }
 
+/**
+ * Adjusts round count using history-derived rounds adjustment.
+ * @param baseRounds - Base number of rounds.
+ * @param insights - History insights with suggested rounds adjustment.
+ * @returns Adjusted round count (minimum 1).
+ */
 export function getAdjustedRounds(baseRounds: number, insights: HistoryInsights): number {
   return Math.max(1, baseRounds + insights.suggestedRoundsAdjust);
 }
 
+/**
+ * Generates a human-readable summary of history insights for UI display.
+ * @param insights - The analyzed history insights.
+ * @returns Summary string or null if insufficient data.
+ */
 export function getInsightsSummary(insights: HistoryInsights): string | null {
   if (insights.totalWorkouts === 0) return null;
 

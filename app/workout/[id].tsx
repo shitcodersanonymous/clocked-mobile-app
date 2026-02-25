@@ -74,6 +74,8 @@ import { TimerXPBar } from '@/components/ui/TimerXPBar';
 import { ComboXPPop } from '@/components/ui/ComboXPPop';
 import { BadgeEarnOverlay } from '@/components/ui/BadgeEarnOverlay';
 import { GloveUnlockOverlay } from '@/components/ui/GloveUnlockOverlay';
+import { LevelUpOverlay } from '@/components/ui/LevelUpOverlay';
+import PostWorkoutSummary from '@/components/workout/PostWorkoutSummary';
 import { checkGloveUnlocks, Glove, GLOVES } from '@/data/gloves';
 
 interface FlatSegment {
@@ -463,9 +465,6 @@ export default function WorkoutSessionScreen() {
     }
     if (sessionActiveRef.current && accumulatedXP > 0 && liveLevel > prevLevelRef.current) {
       setLevelUpLevel(liveLevel);
-      if (Platform.OS !== 'web') {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      }
     }
     prevLevelRef.current = liveLevel;
   }, [liveLevel, accumulatedXP]);
@@ -828,8 +827,14 @@ export default function WorkoutSessionScreen() {
     );
   }, [router]);
 
-  const handleLog = useCallback(() => {
+  const handleLog = useCallback((
+    logDifficulty?: 'too_easy' | 'just_right' | 'too_hard' | null,
+    logNotes?: string,
+  ) => {
     if (!sessionResult || !user) return;
+
+    const finalDifficulty = logDifficulty ?? difficultyRating;
+    const finalNotes = logNotes ?? notes;
 
     const tier = prestige;
     const tierStats = TIER_COMBO_STATS[tier];
@@ -853,15 +858,15 @@ export default function WorkoutSessionScreen() {
 
     updateUser({
       workoutsCompleted: (user.workoutsCompleted || 0) + 1,
-      currentStreak: postLogStats.current_streak,
-      longestStreak: postLogStats.longest_streak,
-      lastWorkoutDate: postLogStats.last_workout_date,
+      currentStreak: postLogStats.currentStreak,
+      longestStreak: postLogStats.longestStreak,
+      lastWorkoutDate: postLogStats.lastWorkoutDate,
       totalTrainingSeconds: (user.totalTrainingSeconds || 0) + totalElapsed,
       ...postL100,
     } as any);
 
     updateBadgeStats({
-      consecutiveDays: postLogStats.current_streak,
+      consecutiveDays: postLogStats.currentStreak,
       totalCombos: (badgeStats.totalCombos || 0) + PER_SESSION_ESTIMATES.combosLanded,
       complexCombos: (badgeStats.complexCombos || 0) + tierStats.complex,
       defenseCombos: (badgeStats.defenseCombos || 0) + tierStats.defense,
@@ -882,15 +887,15 @@ export default function WorkoutSessionScreen() {
       completedAt: new Date().toISOString(),
       duration: totalElapsed,
       xpEarned: sessionResult.sessionTotal,
-      difficulty: difficultyRating || undefined,
-      notes: notes || undefined,
+      difficulty: finalDifficulty || undefined,
+      notes: finalNotes || undefined,
       isManualEntry: false,
     });
 
     const prevLevel = getLevelFromXP(prestige, user.totalXP || 0);
     const newLevel = getLevelFromXP(prestige, (user.totalXP || 0) + sessionResult.sessionTotal);
     const prevUnlocked = new Set(checkGloveUnlocks(prestige, prevLevel, user.currentStreak || 0));
-    const nowUnlocked = checkGloveUnlocks(prestige, newLevel, postLogStats.current_streak);
+    const nowUnlocked = checkGloveUnlocks(prestige, newLevel, postLogStats.currentStreak);
     const brandNew = nowUnlocked.filter(id => !prevUnlocked.has(id));
     if (brandNew.length > 0) {
       const gloveMap = new Map(Object.entries(GLOVES));
@@ -919,6 +924,13 @@ export default function WorkoutSessionScreen() {
     );
   }
 
+  const handleLogFromSummary = useCallback((
+    rating: 'too_easy' | 'just_right' | 'too_hard' | null,
+    summaryNotes: string,
+  ) => {
+    handleLog(rating, summaryNotes);
+  }, [handleLog]);
+
   if (isComplete) {
     if (!sessionResult) {
       return (
@@ -928,136 +940,24 @@ export default function WorkoutSessionScreen() {
       );
     }
 
-    const ranking = getRankingFromLevel(sessionResult.levelAfter);
-    const xpInfo = getXPWithinCurrentLevel(sessionResult.prestige, sessionResult.totalXPAfter);
-
     return (
-      <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-        <ScrollView style={styles.summaryScroll} contentContainerStyle={styles.summaryContent}>
-          <Text style={styles.summaryTitle}>WORKOUT COMPLETE</Text>
-          <Text style={styles.workoutNameSummary}>{workout.name}</Text>
-          <Text style={styles.summaryDuration}>{formatTimeCompact(totalElapsed)}</Text>
-
-          <View style={styles.xpTotalCard}>
-            <Text style={styles.xpTotalLabel}>TOTAL XP EARNED</Text>
-            <Text style={styles.xpTotalValue}>+{sessionResult.sessionTotal.toLocaleString()}</Text>
-          </View>
-
-          <View style={styles.xpBreakdownCard}>
-            <View style={styles.xpRow}>
-              <Text style={styles.xpRowLabel}>Base XP</Text>
-              <Text style={styles.xpRowValue}>{sessionResult.baseXP.toLocaleString()}</Text>
-            </View>
-            {sessionResult.streakBonus > 0 && (
-              <View style={styles.xpRow}>
-                <Text style={[styles.xpRowLabel, { color: colors.dark.orange }]}>
-                  Streak Bonus ({sessionResult.streakMultiplier}x)
-                </Text>
-                <Text style={[styles.xpRowValue, { color: colors.dark.orange }]}>
-                  +{sessionResult.streakBonus.toLocaleString()}
-                </Text>
-              </View>
-            )}
-            {sessionResult.badgeXP > 0 && (
-              <View style={styles.xpRow}>
-                <Text style={[styles.xpRowLabel, { color: colors.dark.amber }]}>Badge XP</Text>
-                <Text style={[styles.xpRowValue, { color: colors.dark.amber }]}>
-                  +{sessionResult.badgeXP.toLocaleString()}
-                </Text>
-              </View>
-            )}
-          </View>
-
-          <View style={styles.levelCard}>
-            <View style={styles.levelRow}>
-              <Text style={styles.levelLabel}>Level</Text>
-              <Text style={[styles.levelValue, { color: accentColor }]}>
-                {sessionResult.levelBefore} {sessionResult.didLevelUp ? `\u2192 ${sessionResult.levelAfter}` : ''}
-              </Text>
-            </View>
-            <XPBar
-              prestige={sessionResult.prestige}
-              level={sessionResult.levelAfter}
-              currentXP={xpInfo.current}
-              requiredXP={xpInfo.required}
-              showRank={true}
-              rankingName={RANKING_NAMES[ranking]}
-              prestigeName={PRESTIGE_NAMES[sessionResult.prestige]}
-            />
-          </View>
-
-          {sessionResult.newBadges.length > 0 && (
-            <View style={styles.badgesEarnedCard}>
-              <Text style={styles.badgesEarnedTitle}>BADGES EARNED</Text>
-              {sessionResult.newBadges.map((badge) => (
-                <View key={badge.id} style={styles.badgeRow}>
-                  <Ionicons name="trophy" size={16} color={colors.dark.amber} />
-                  <View style={styles.badgeInfo}>
-                    <Text style={styles.badgeName}>{badge.name}</Text>
-                    <Text style={styles.badgeDesc}>{badge.description}</Text>
-                  </View>
-                  <Text style={styles.badgeXP}>+{badge.xpReward}</Text>
-                </View>
-              ))}
-            </View>
-          )}
-
-          <View style={styles.difficultySection}>
-            <Text style={styles.difficultyLabel}>How was it?</Text>
-            <View style={styles.difficultyRow}>
-              {(['too_easy', 'just_right', 'too_hard'] as const).map((d) => (
-                <TouchableOpacity
-                  key={d}
-                  style={[
-                    styles.difficultyBtn,
-                    difficultyRating === d && styles.difficultyBtnActive,
-                    difficultyRating === d && { borderColor: accentColor },
-                  ]}
-                  onPress={() => setDifficultyRating(d)}
-                >
-                  <Ionicons
-                    name={d === 'too_easy' ? 'thumbs-down-outline' : d === 'just_right' ? 'thumbs-up-outline' : 'flame-outline'}
-                    size={20}
-                    color={difficultyRating === d ? accentColor : colors.dark.mutedForeground}
-                  />
-                  <Text style={[
-                    styles.difficultyBtnText,
-                    difficultyRating === d && { color: accentColor },
-                  ]}>
-                    {d === 'too_easy' ? 'Easy' : d === 'just_right' ? 'Perfect' : 'Hard'}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-
-          <TextInput
-            style={styles.notesInput}
-            placeholder="Add notes..."
-            placeholderTextColor={colors.dark.mutedForeground}
-            value={notes}
-            onChangeText={setNotes}
-            multiline
-            numberOfLines={3}
-          />
-
-          {!logged ? (
-            <TouchableOpacity style={[styles.logBtn, { backgroundColor: accentColor }]} onPress={handleLog}>
-              <Text style={styles.logBtnText}>LOG WORKOUT</Text>
-            </TouchableOpacity>
-          ) : (
-            <View style={styles.loggedContainer}>
-              <Ionicons name="checkmark-circle" size={24} color={colors.dark.green} />
-              <Text style={styles.loggedText}>Workout Logged!</Text>
-            </View>
-          )}
-
-          <TouchableOpacity style={styles.homeBtn} onPress={() => router.back()}>
-            <Ionicons name="home-outline" size={20} color={colors.dark.foreground} />
-            <Text style={styles.homeBtnText}>Home</Text>
-          </TouchableOpacity>
-        </ScrollView>
-      </View>
+      <PostWorkoutSummary
+        sessionResult={sessionResult}
+        workoutName={workout.name}
+        totalElapsed={totalElapsed}
+        accentColor={accentColor}
+        logged={logged}
+        onLog={handleLogFromSummary}
+        onGoHome={() => router.back()}
+        onPrestige={() => {
+          const nextPrestige = PRESTIGE_ORDER[PRESTIGE_ORDER.indexOf(prestige) + 1] as Prestige;
+          if (nextPrestige) {
+            updateUser({ prestige: nextPrestige, totalXP: 0, currentLevel: 1 } as any);
+          }
+        }}
+        onDismissPrestige={() => {}}
+        insets={insets}
+      />
     );
   }
 
@@ -1123,16 +1023,11 @@ export default function WorkoutSessionScreen() {
       </View>
 
       {levelUpLevel !== null && (
-        <Animated.View entering={FadeIn.duration(300)} style={styles.levelUpOverlay}>
-          <View style={styles.levelUpCard}>
-            <Ionicons name="arrow-up-circle" size={48} color={accentColor} />
-            <Text style={[styles.levelUpText, { color: accentColor }]}>LEVEL UP!</Text>
-            <Text style={styles.levelUpLevel}>Level {levelUpLevel}</Text>
-            <TouchableOpacity onPress={() => setLevelUpLevel(null)} style={styles.levelUpDismiss}>
-              <Text style={styles.levelUpDismissText}>Continue</Text>
-            </TouchableOpacity>
-          </View>
-        </Animated.View>
+        <LevelUpOverlay
+          level={levelUpLevel}
+          prestige={prestige}
+          onDismiss={() => setLevelUpLevel(null)}
+        />
       )}
 
       {latestBadgePop && (
@@ -1712,43 +1607,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  levelUpOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    zIndex: 50,
-    backgroundColor: 'rgba(0,0,0,0.85)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  levelUpCard: {
-    alignItems: 'center',
-    gap: 12,
-  },
-  levelUpText: {
-    fontSize: 32,
-    fontWeight: '900' as const,
-    letterSpacing: 2,
-  },
-  levelUpLevel: {
-    fontSize: 20,
-    fontWeight: '700' as const,
-    color: colors.dark.foreground,
-  },
-  levelUpDismiss: {
-    marginTop: 16,
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-    backgroundColor: colors.dark.surface2,
-    borderRadius: 12,
-  },
-  levelUpDismissText: {
-    color: colors.dark.foreground,
-    fontSize: 14,
-    fontWeight: '600' as const,
-  },
   badgePopContainer: {
     alignItems: 'center',
     paddingVertical: 4,
@@ -1796,224 +1654,6 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700' as const,
     color: colors.dark.amber,
-  },
-  summaryScroll: {
-    flex: 1,
-  },
-  summaryContent: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  summaryTitle: {
-    fontSize: 14,
-    fontWeight: '900' as const,
-    color: colors.dark.volt,
-    letterSpacing: 3,
-    textAlign: 'center',
-    marginBottom: 4,
-  },
-  workoutNameSummary: {
-    fontSize: 24,
-    fontWeight: '900' as const,
-    color: colors.dark.foreground,
-    textAlign: 'center',
-    marginBottom: 4,
-  },
-  summaryDuration: {
-    fontSize: 16,
-    fontWeight: '600' as const,
-    color: colors.dark.mutedForeground,
-    textAlign: 'center',
-    marginBottom: 24,
-    fontVariant: ['tabular-nums'],
-  },
-  xpTotalCard: {
-    backgroundColor: colors.dark.surface1,
-    borderRadius: 16,
-    padding: 20,
-    alignItems: 'center',
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: colors.dark.volt + '30',
-  },
-  xpTotalLabel: {
-    fontSize: 11,
-    fontWeight: '700' as const,
-    color: colors.dark.mutedForeground,
-    letterSpacing: 1,
-    marginBottom: 4,
-  },
-  xpTotalValue: {
-    fontSize: 36,
-    fontWeight: '900' as const,
-    color: colors.dark.volt,
-  },
-  xpBreakdownCard: {
-    backgroundColor: colors.dark.surface1,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: colors.dark.border,
-  },
-  xpRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 6,
-  },
-  xpRowLabel: {
-    fontSize: 13,
-    color: colors.dark.mutedForeground,
-  },
-  xpRowValue: {
-    fontSize: 13,
-    fontWeight: '700' as const,
-    color: colors.dark.foreground,
-  },
-  levelCard: {
-    backgroundColor: colors.dark.surface1,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: colors.dark.border,
-  },
-  levelRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  levelLabel: {
-    fontSize: 13,
-    color: colors.dark.mutedForeground,
-  },
-  levelValue: {
-    fontSize: 13,
-    fontWeight: '700' as const,
-  },
-  badgesEarnedCard: {
-    backgroundColor: colors.dark.surface1,
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: colors.dark.border,
-  },
-  badgesEarnedTitle: {
-    fontSize: 11,
-    fontWeight: '700' as const,
-    color: colors.dark.amber,
-    letterSpacing: 1,
-    marginBottom: 12,
-  },
-  badgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.dark.surface3,
-  },
-  badgeInfo: {
-    flex: 1,
-  },
-  badgeName: {
-    fontSize: 13,
-    fontWeight: '700' as const,
-    color: colors.dark.foreground,
-  },
-  badgeDesc: {
-    fontSize: 11,
-    color: colors.dark.mutedForeground,
-  },
-  badgeXP: {
-    fontSize: 13,
-    fontWeight: '900' as const,
-    color: colors.dark.volt,
-  },
-  difficultySection: {
-    marginBottom: 16,
-  },
-  difficultyLabel: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-    color: colors.dark.foreground,
-    marginBottom: 10,
-  },
-  difficultyRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  difficultyBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 12,
-    backgroundColor: colors.dark.surface1,
-    borderWidth: 1,
-    borderColor: colors.dark.surface3,
-    alignItems: 'center',
-    gap: 4,
-  },
-  difficultyBtnActive: {
-    backgroundColor: colors.dark.surface2,
-  },
-  difficultyBtnText: {
-    fontSize: 11,
-    fontWeight: '600' as const,
-    color: colors.dark.mutedForeground,
-  },
-  notesInput: {
-    backgroundColor: colors.dark.surface1,
-    borderRadius: 12,
-    padding: 14,
-    color: colors.dark.foreground,
-    fontSize: 14,
-    borderWidth: 1,
-    borderColor: colors.dark.border,
-    marginBottom: 20,
-    minHeight: 80,
-    textAlignVertical: 'top',
-  },
-  logBtn: {
-    borderRadius: 14,
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  logBtnText: {
-    fontSize: 15,
-    fontWeight: '900' as const,
-    color: colors.dark.background,
-    letterSpacing: 1,
-  },
-  loggedContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 16,
-    marginBottom: 12,
-  },
-  loggedText: {
-    fontSize: 16,
-    fontWeight: '700' as const,
-    color: colors.dark.green,
-  },
-  homeBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 14,
-    borderRadius: 12,
-    backgroundColor: colors.dark.surface1,
-    borderWidth: 1,
-    borderColor: colors.dark.border,
-  },
-  homeBtnText: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-    color: colors.dark.foreground,
   },
   comboXPPopContainer: {
     position: 'absolute',

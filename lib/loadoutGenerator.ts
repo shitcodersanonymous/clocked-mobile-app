@@ -1,6 +1,18 @@
+/**
+ * Loadout Generator — Creates equipment-aware workout loadouts.
+ *
+ * Generates complete workout structures (phases, segments, combos) based on
+ * the user's experience tier and available equipment. Produces warmup, grind
+ * (with tier-appropriate combo pools), championship rounds, conditioning,
+ * and cooldown phases.
+ *
+ * @module loadoutGenerator
+ */
+
 import { WorkoutPhase, WorkoutSegment } from '@/lib/types';
 import { COMBO_POOLS, TierName } from '@/data/comboPools';
 
+/** Configuration of user's available boxing equipment. */
 export interface UserEquipmentConfig {
   gloves: boolean;
   wraps: boolean;
@@ -12,6 +24,7 @@ export interface UserEquipmentConfig {
   primaryBag?: 'heavy' | 'double_end' | 'none';
 }
 
+/** A complete auto-generated workout loadout ready to be saved or started. */
 export interface GeneratedLoadout {
   name: string;
   description: string;
@@ -30,6 +43,11 @@ function generateId(): string {
   return Date.now().toString() + Math.random().toString(36).substr(2, 9);
 }
 
+/**
+ * Maps a user-facing experience level string to the internal combo pool tier name.
+ * @param experienceLevel - Experience level (e.g. 'complete_beginner', 'intermediate').
+ * @returns The corresponding tier name for combo pool selection.
+ */
 export function mapExperienceToTier(experienceLevel: string): TierName {
   switch (experienceLevel) {
     case 'complete_beginner': return 'rookie';
@@ -52,6 +70,13 @@ function determinePrimaryBag(equipment: UserEquipmentConfig): 'heavy' | 'double_
   return 'none';
 }
 
+/**
+ * Generates a full workout loadout tailored to the user's tier and equipment.
+ * Includes warmup, tier-appropriate combo phases, championship rounds, conditioning, and cooldown.
+ * @param experienceLevel - The user's experience level string.
+ * @param equipment - The user's available equipment configuration.
+ * @returns A complete generated loadout with phases, combos, and metadata.
+ */
 export function generateLoadoutWorkout(
   experienceLevel: string,
   equipment: UserEquipmentConfig,

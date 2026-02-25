@@ -1,15 +1,30 @@
+/**
+ * Workout Tracking — Post-workout statistics and profile increment calculations.
+ *
+ * Handles streak computation, time-of-day classification, holiday detection,
+ * comeback tracking, and per-session punch/defense counting for profile updates.
+ *
+ * @module workoutTracking
+ */
+
 import { Prestige, getLevelFromXP } from '@/lib/xpSystem';
 import { CompletedWorkout, UserProfile, WorkoutSegment } from '@/lib/types';
 
+/**
+ * Computes updated streak and aggregate stats after logging a completed workout.
+ * @param completedWorkouts - Full list of completed workouts (including the new one).
+ * @param profile - The user's current profile state.
+ * @returns Updated stats: workouts completed, streak info, last workout date, total training seconds.
+ */
 export function computePostLogStats(
   completedWorkouts: CompletedWorkout[],
   profile: UserProfile
 ): {
-  workouts_completed: number;
-  current_streak: number;
-  longest_streak: number;
-  last_workout_date: string;
-  total_training_seconds: number;
+  workoutsCompleted: number;
+  currentStreak: number;
+  longestStreak: number;
+  lastWorkoutDate: string;
+  totalTrainingSeconds: number;
 } {
   const workoutsCompleted = completedWorkouts.length;
 
@@ -40,14 +55,18 @@ export function computePostLogStats(
   const longestStreak = Math.max(newStreak, profile.longestStreak);
 
   return {
-    workouts_completed: workoutsCompleted,
-    current_streak: newStreak,
-    longest_streak: longestStreak,
-    last_workout_date: todayStr,
-    total_training_seconds: totalTrainingSeconds,
+    workoutsCompleted,
+    currentStreak: newStreak,
+    longestStreak,
+    lastWorkoutDate: todayStr,
+    totalTrainingSeconds,
   };
 }
 
+/**
+ * Classifies the current time of day for badge/stat tracking.
+ * @returns Flags for morning (5–10am) and night (9pm–5am) windows.
+ */
 export function getTimeOfDayStats(): { isMorning: boolean; isNight: boolean } {
   const hour = new Date().getHours();
   return {
@@ -56,6 +75,10 @@ export function getTimeOfDayStats(): { isMorning: boolean; isNight: boolean } {
   };
 }
 
+/**
+ * Returns day-of-week classification flags for the current day.
+ * @returns Flags for weekend, weekday, and specific days (Monday, Friday, Sunday).
+ */
 export function getDayOfWeekStats(): {
   isWeekend: boolean;
   isWeekday: boolean;
@@ -73,6 +96,11 @@ export function getDayOfWeekStats(): {
   };
 }
 
+/**
+ * Checks if the user already worked out today (double day).
+ * @param lastWorkoutDate - ISO date string of the user's last workout, or null.
+ * @returns True if the last workout was today.
+ */
 export function isDoubleDay(lastWorkoutDate: string | null): boolean {
   if (!lastWorkoutDate) return false;
   const today = new Date();
@@ -80,6 +108,10 @@ export function isDoubleDay(lastWorkoutDate: string | null): boolean {
   return lastWorkoutDate === today.toISOString().split('T')[0];
 }
 
+/**
+ * Checks if today is a recognized holiday for special badge eligibility.
+ * @returns Flags for New Year's Day and general holiday status.
+ */
 export function isHolidayWorkout(): { isNewYears: boolean; isHoliday: boolean } {
   const now = new Date();
   const month = now.getMonth();
@@ -99,6 +131,12 @@ export function isHolidayWorkout(): { isNewYears: boolean; isHoliday: boolean } 
   return { isNewYears, isHoliday };
 }
 
+/**
+ * Determines if this workout counts as a "comeback" (7+ days since last workout, no active streak).
+ * @param lastWorkoutDate - ISO date string of the user's last workout, or null.
+ * @param currentStreak - The user's current consecutive day streak.
+ * @returns True if this qualifies as a comeback workout.
+ */
 export function isComeback(lastWorkoutDate: string | null, currentStreak: number): boolean {
   if (!lastWorkoutDate || currentStreak > 0) return false;
   const last = new Date(lastWorkoutDate);
@@ -107,6 +145,15 @@ export function isComeback(lastWorkoutDate: string | null, currentStreak: number
   return daysSince >= 7;
 }
 
+/**
+ * Computes all profile field increments after a completed session.
+ * Includes time-of-day stats, day-of-week stats, double-day detection, holiday checks,
+ * comeback tracking, best session XP, post-L100 overflow, and per-punch/defense counts.
+ * @param profile - The user's current profile as a record.
+ * @param sessionXP - XP earned in the session.
+ * @param flatSegments - Flattened array of workout segments with optional combo data.
+ * @returns Record of profile fields to update/increment.
+ */
 export function computePostL100Increments(
   profile: Record<string, any>,
   sessionXP: number,
@@ -115,7 +162,7 @@ export function computePostL100Increments(
   const increments: Record<string, any> = {};
 
   const prestige = (profile.prestige || 'beginner') as Prestige;
-  const currentLevel = profile.current_level || profile.currentLevel || 1;
+  const currentLevel = profile.currentLevel || 1;
   const isAtL100 = currentLevel >= 100;
 
   const { isMorning, isNight } = getTimeOfDayStats();
@@ -129,7 +176,7 @@ export function computePostL100Increments(
   if (dayStats.isFriday) increments.fridayWorkouts = (profile.fridayWorkouts || 0) + 1;
   if (dayStats.isSunday) increments.sundayWorkouts = (profile.sundayWorkouts || 0) + 1;
 
-  if (isDoubleDay(profile.lastWorkoutDate || profile.last_workout_date)) {
+  if (isDoubleDay(profile.lastWorkoutDate)) {
     increments.doubleDays = (profile.doubleDays || 0) + 1;
   }
 
@@ -137,7 +184,7 @@ export function computePostL100Increments(
   if (isNewYears) increments.newYearsWorkout = true;
   if (isHoliday) increments.holidayWorkouts = (profile.holidayWorkouts || 0) + 1;
 
-  if (isComeback(profile.lastWorkoutDate || profile.last_workout_date, profile.currentStreak || profile.current_streak || 0)) {
+  if (isComeback(profile.lastWorkoutDate, profile.currentStreak || 0)) {
     increments.comebackCount = (profile.comebackCount || 0) + 1;
   }
 

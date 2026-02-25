@@ -1,6 +1,20 @@
+/**
+ * Coach Engine — Adaptive workout recommendation system.
+ *
+ * Analyzes workout history and user profile to generate personalized training
+ * recommendations. Implements 12 calibration rules (C1–C12) covering difficulty,
+ * trend detection, punch distribution, defense, recovery, time-of-day, streaks,
+ * variety, goals, notes parsing, and confidence scoring.
+ *
+ * @module coachEngine
+ */
+
 import { WorkoutHistoryEntry } from '@/lib/types';
 import { analyzeWorkoutHistory, HistoryInsights } from '@/lib/workoutHistoryAnalysis';
 
+// ─── Focus Areas ────────────────────────────────────────────────────────────
+
+/** Training focus areas the coach can recommend for a workout session. */
 export type FocusArea =
   | 'power'
   | 'speed'
@@ -13,6 +27,7 @@ export type FocusArea =
   | 'conditioning'
   | 'recovery';
 
+/** Full recommendation output from the coach engine, used to generate workouts. */
 export interface CoachRecommendation {
   workoutType: 'boxing' | 'shadowboxing' | 'conditioning' | 'recovery' | 'mixed';
   suggestedDifficulty: 'beginner' | 'intermediate' | 'advanced';
@@ -43,6 +58,7 @@ export interface CoachRecommendation {
   isDefault?: boolean;
 }
 
+/** User profile data consumed by the coach engine for personalized recommendations. */
 export interface ProfileData {
   prestige: string | null;
   current_level: number | null;
@@ -84,6 +100,14 @@ const TIER_ALLOWS_DEFENSE: Record<string, boolean> = {
   rookie: false, beginner: false, intermediate: true, advanced: true, pro: true,
 };
 
+/**
+ * Generates a personalized workout recommendation based on user history and profile.
+ * Applies calibration rules C1–C12, equipment constraints, and combo guidance.
+ * @param history - Array of past workout history entries (newest first).
+ * @param profile - The user's profile data.
+ * @param currentTime - Optional current time override (defaults to now).
+ * @returns A complete coach recommendation.
+ */
 export function generateCoachRecommendation(
   history: WorkoutHistoryEntry[],
   profile: ProfileData,
@@ -148,6 +172,7 @@ export function generateCoachRecommendation(
   return rec;
 }
 
+/** C1: Adjusts difficulty based on recent workout difficulty ratings. */
 function applyC1DifficultyCalibration(
   rec: CoachRecommendation,
   history: WorkoutHistoryEntry[],
@@ -182,6 +207,7 @@ function applyC1DifficultyCalibration(
   }
 }
 
+/** C2: Detects difficulty trends across recent sessions and adjusts accordingly. */
 function applyC2TrendDetection(rec: CoachRecommendation, insights: HistoryInsights) {
   if (!insights.recentTrend) return;
 
@@ -195,6 +221,7 @@ function applyC2TrendDetection(rec: CoachRecommendation, insights: HistoryInsigh
   }
 }
 
+/** C3: Uses per-round feedback to adjust round duration, rest, and warmup. */
 function applyC3RoundFeedback(rec: CoachRecommendation, insights: HistoryInsights) {
   if (insights.weakRounds.length === 0 && insights.strongRounds.length === 0) return;
 
@@ -214,6 +241,12 @@ function applyC3RoundFeedback(rec: CoachRecommendation, insights: HistoryInsight
   }
 }
 
+/**
+ * C4: Identifies under-used punches and adds variety focus when distribution is skewed.
+ * @param rec - The recommendation being built.
+ * @param profile - User profile with punch count stats.
+ * @param tier - The user's prestige/experience tier.
+ */
 export function applyC4PunchDistribution(
   rec: CoachRecommendation,
   profile: ProfileData,
@@ -250,6 +283,12 @@ export function applyC4PunchDistribution(
   rec.punchEmphasis = emphasis;
 }
 
+/**
+ * C5: Detects lack of defensive movement and adds defense focus when needed.
+ * @param rec - The recommendation being built.
+ * @param profile - User profile with defense move stats.
+ * @param tier - The user's tier (defense only available intermediate+).
+ */
 export function applyC5DefenseNeglect(
   rec: CoachRecommendation,
   profile: ProfileData,
@@ -280,6 +319,12 @@ export function applyC5DefenseNeglect(
   }
 }
 
+/**
+ * C6: Adjusts recommendation for recovery based on days since last workout.
+ * @param rec - The recommendation being built.
+ * @param profile - User profile with last workout date.
+ * @param now - Current timestamp.
+ */
 export function applyC6Recovery(
   rec: CoachRecommendation,
   profile: ProfileData,
@@ -305,6 +350,12 @@ export function applyC6Recovery(
   }
 }
 
+/**
+ * C7: Adjusts workout parameters based on time of day (morning = shorter, night = lighter).
+ * @param rec - The recommendation being built.
+ * @param profile - User profile data.
+ * @param now - Current timestamp.
+ */
 export function applyC7TimeOfDay(
   rec: CoachRecommendation,
   profile: ProfileData,
@@ -322,6 +373,11 @@ export function applyC7TimeOfDay(
   }
 }
 
+/**
+ * C8: Protects long streaks by capping intensity; eases comeback users back in.
+ * @param rec - The recommendation being built.
+ * @param profile - User profile with streak data.
+ */
 export function applyC8StreakProtection(
   rec: CoachRecommendation,
   profile: ProfileData,
@@ -339,6 +395,11 @@ export function applyC8StreakProtection(
   }
 }
 
+/**
+ * C9: Adds variety focus when the user repeats the same workout too often.
+ * @param rec - The recommendation being built.
+ * @param history - Recent workout history entries.
+ */
 export function applyC9WorkoutVariety(
   rec: CoachRecommendation,
   history: WorkoutHistoryEntry[],
@@ -358,6 +419,11 @@ export function applyC9WorkoutVariety(
   }
 }
 
+/**
+ * C10: Aligns recommendation with the user's stated training goals.
+ * @param rec - The recommendation being built.
+ * @param profile - User profile with goals array.
+ */
 export function applyC10GoalAlignment(
   rec: CoachRecommendation,
   profile: ProfileData,
@@ -393,6 +459,11 @@ export function applyC10GoalAlignment(
   }
 }
 
+/**
+ * C11: Parses free-text notes from recent sessions for fatigue, injury, and preference signals.
+ * @param rec - The recommendation being built.
+ * @param history - Recent workout history entries with notes.
+ */
 export function applyC11NotesParsing(
   rec: CoachRecommendation,
   history: WorkoutHistoryEntry[],
@@ -433,6 +504,12 @@ export function applyC11NotesParsing(
   }
 }
 
+/**
+ * C12: Sets the recommendation confidence level based on data quality and recency.
+ * @param rec - The recommendation being built.
+ * @param history - Workout history entries.
+ * @param profile - User profile data.
+ */
 export function applyC12Confidence(
   rec: CoachRecommendation,
   history: WorkoutHistoryEntry[],
@@ -579,6 +656,12 @@ function applyZeroHistory(rec: CoachRecommendation, profile: ProfileData): Coach
   return rec;
 }
 
+/**
+ * Converts a coach recommendation into a natural-language workout prompt
+ * suitable for the AI workout parser.
+ * @param rec - The coach recommendation to convert.
+ * @returns A prompt string describing the recommended workout.
+ */
 export function recommendationToPrompt(rec: CoachRecommendation): string {
   let prompt = `${rec.suggestedRounds} rounds`;
 

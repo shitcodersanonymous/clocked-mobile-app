@@ -1,8 +1,26 @@
+/**
+ * AI Workout Parser — Multi-layer natural language to workout converter.
+ *
+ * Parses free-form workout prompts into structured workout objects using a
+ * 3-layer approach:
+ *   Layer 1: `parseWorkoutInput()` — Full multi-block parser with combo extraction,
+ *            superset detection, conditioning recognition, and bag type inference.
+ *   Layer 2: `parseWorkoutPrompt()` — Simpler regex-based fallback that extracts
+ *            rounds, durations, rest, and activity type from natural language.
+ *   Layer 3: `autoRepairCombos()` — Post-processing pass that fixes malformed
+ *            combos, fills missing fields, and enforces structural rules.
+ *
+ * Also includes prompt quality evaluation for user guidance.
+ *
+ * @module aiWorkoutParser
+ */
+
 import { parseComboString, extractCombosFromPrompt, containsComboNotation } from '@/lib/comboParser';
 import { Workout, WorkoutPhase, WorkoutSegment } from '@/lib/types';
 import { detectBagType, detectAllSpeedBagDrills, DetectedBagType } from '@/data/speedBagDrills';
 import { generateId } from '@/lib/utils';
 
+/** Insights from workout history used for adaptive difficulty adjustments. */
 export interface HistoryInsights {
   avgDifficulty?: number;
   avgRounds?: number;
@@ -21,6 +39,7 @@ function getAdjustedRestDuration(rest: number, _insights: HistoryInsights): numb
   return rest;
 }
 
+/** Default durations (in seconds) used when a prompt doesn't specify timing. */
 export const DEFAULT_DURATIONS = {
   boxingRound: 180,
   boxingRest: 60,
@@ -35,6 +54,7 @@ export const DEFAULT_DURATIONS = {
   hiitRest: 15,
 } as const;
 
+/** Keyword-to-tag mapping for auto-tagging parsed workouts. */
 export const KEYWORD_TAGS: Record<string, string[]> = {
   boxing: ['box', 'punch', 'jab', 'cross', 'hook', 'uppercut', 'combo', 'heavy bag', 'shadowbox', 'sparring', 'mitt', 'double end bag', 'double-end bag'],
   cardio: ['cardio', 'jump rope', 'run', 'sprint', 'jog', 'treadmill', 'conditioning'],
@@ -45,6 +65,7 @@ export const KEYWORD_TAGS: Record<string, string[]> = {
   footwork: ['footwork', 'movement', 'circle', 'step', 'pivot', 'angle'],
 };
 
+/** A parsed workout phase before conversion to a full WorkoutPhase object. */
 export interface ParsedPhase {
   name: string;
   phaseType: 'continuous' | 'circuit' | 'rest';
@@ -55,6 +76,7 @@ export interface ParsedPhase {
   comboOrder?: 'sequential' | 'random';
 }
 
+/** A parsed workout segment before conversion to a full WorkoutSegment object. */
 export interface ParsedSegment {
   name: string;
   type: 'active' | 'rest';
@@ -65,6 +87,7 @@ export interface ParsedSegment {
   reps?: number;
 }
 
+/** Complete result of parsing a workout prompt, including metadata and parse flags. */
 export interface ParsedWorkoutResult {
   name: string;
   rounds?: number;
@@ -716,6 +739,15 @@ function inferActivityType(name: string): 'combos' | 'shadowbox' | 'run' | 'push
   return 'custom';
 }
 
+/**
+ * Layer 1 full parser: converts a multi-block workout prompt into a ParsedWorkoutResult.
+ * Handles multi-block prompts, supersets, conditioning blocks, combo extraction,
+ * bag type detection, difficulty inference, and megaset repeats.
+ * @param prompt - The user's workout prompt text.
+ * @param userLevel - The user's experience level for difficulty inference.
+ * @param historyInsights - Optional history insights for adaptive adjustments.
+ * @returns A complete ParsedWorkoutResult with phases, combos, tags, and metadata.
+ */
 export function parseWorkoutInput(
   prompt: string, 
   userLevel: string = 'beginner',
@@ -969,6 +1001,12 @@ function inferDifficulty(prompt: string, userLevel: string): 'beginner' | 'inter
 
 const DIFFICULTY_SCORES = { beginner: 0, intermediate: 1, advanced: 2 } as const;
 
+/**
+ * Infers difficulty level from combo token complexity.
+ * Body shots (7, 8) and step-in/out → advanced; uppercuts (5, 6) and advanced defense → intermediate.
+ * @param combos - Array of parsed combo token arrays.
+ * @returns Inferred difficulty level.
+ */
 export function classifyDifficultyFromCombos(combos: string[][]): 'beginner' | 'intermediate' | 'advanced' {
   let maxLevel: 'beginner' | 'intermediate' | 'advanced' = 'beginner';
 
@@ -994,6 +1032,11 @@ function higherDifficulty(
   return DIFFICULTY_SCORES[a] >= DIFFICULTY_SCORES[b] ? a : b;
 }
 
+/**
+ * Detects relevant workout tags from prompt keywords (boxing, cardio, hiit, etc.).
+ * @param prompt - The workout prompt text.
+ * @returns Array of tag strings.
+ */
 export function detectTags(prompt: string): string[] {
   const lowerPrompt = prompt.toLowerCase();
   const tags: string[] = [];
@@ -1083,6 +1126,12 @@ function generateWorkoutName(
   return 'Quick Burn';
 }
 
+/**
+ * Converts a ParsedWorkoutResult into a full Workout object ready for storage.
+ * Organizes phases into warmup/grind/cooldown sections and calculates total duration.
+ * @param result - The parsed workout result from parseWorkoutInput.
+ * @returns A complete Workout object.
+ */
 export function parsedResultToWorkout(result: ParsedWorkoutResult): Workout {
   const warmupPhases: WorkoutPhase[] = [];
   const grindPhases: WorkoutPhase[] = [];
@@ -1139,6 +1188,11 @@ export function parsedResultToWorkout(result: ParsedWorkoutResult): Workout {
   };
 }
 
+/**
+ * Evaluates the quality/completeness of a workout prompt and suggests improvements.
+ * @param prompt - The user's workout prompt text.
+ * @returns Object with `isComplete` flag and array of improvement suggestions.
+ */
 export function evaluatePromptQuality(prompt: string): {
   isComplete: boolean;
   suggestions: string[];
@@ -1159,4 +1213,237 @@ export function evaluatePromptQuality(prompt: string): {
   return { isComplete: suggestions.length === 0, suggestions };
 }
 
+/**
+ * Layer 2 fallback parser: converts a simple natural language prompt into a Workout.
+ * Extracts round count, duration, rest, and activity type using regex patterns.
+ * Generates a basic workout with warmup, main rounds, and cooldown.
+ * @param prompt - The user's workout prompt text.
+ * @returns A complete Workout object.
+ */
+export function parseWorkoutPrompt(prompt: string): Workout {
+  const lower = prompt.toLowerCase().trim();
+
+  const roundMatch = lower.match(/(\d+)\s*(?:round|rnd|set)s?/);
+  const rounds = roundMatch ? Math.min(Math.max(parseInt(roundMatch[1]), 1), 20) : 3;
+
+  let workDuration: number = DEFAULT_DURATIONS.boxingRound;
+  const minMatch = lower.match(/(\d+)\s*min(?:ute)?s?\s*(?:round|each|per)?/);
+  const secMatch = lower.match(/(\d+)\s*sec(?:ond)?s?\s*(?:round|each|per)?/);
+  if (minMatch) {
+    workDuration = Math.min(parseInt(minMatch[1]) * 60, 600);
+  } else if (secMatch) {
+    workDuration = Math.min(parseInt(secMatch[1]), 600);
+  }
+
+  let restDuration: number = DEFAULT_DURATIONS.boxingRest;
+  const restMinMatch = lower.match(/(\d+)\s*min(?:ute)?s?\s*rest/);
+  const restSecMatch = lower.match(/(\d+)\s*sec(?:ond)?s?\s*rest/);
+  if (/no\s*rest/.test(lower)) {
+    restDuration = 0;
+  } else if (restMinMatch) {
+    restDuration = Math.min(parseInt(restMinMatch[1]) * 60, 300);
+  } else if (restSecMatch) {
+    restDuration = Math.min(parseInt(restSecMatch[1]), 300);
+  }
+
+  let activityName = 'Heavy Bag Freestyle';
+  let segmentType: 'combo' | 'speedbag' | 'doubleend' | 'shadowboxing' | 'exercise' = 'combo';
+  let activityType: 'combos' | 'shadowbox' | 'run' | 'pushups' | 'custom' = 'custom';
+
+  if (/shadow\s*box/i.test(lower)) {
+    activityName = 'Shadowboxing';
+    segmentType = 'shadowboxing';
+    activityType = 'shadowbox';
+  } else if (/speed\s*bag/i.test(lower)) {
+    activityName = 'Speed Bag';
+    segmentType = 'speedbag';
+  } else if (/double[\s-]*end\s*bag/i.test(lower)) {
+    activityName = 'Double End Bag';
+    segmentType = 'doubleend';
+  } else if (/heavy\s*bag/i.test(lower) || /bag\s*work/i.test(lower)) {
+    activityName = 'Heavy Bag Freestyle';
+    segmentType = 'combo';
+  } else if (/jump\s*rope|skipping/i.test(lower)) {
+    activityName = 'Jump Rope';
+    segmentType = 'exercise';
+    activityType = 'run';
+  } else if (/hiit|circuit|conditioning/i.test(lower)) {
+    activityName = 'HIIT Circuit';
+    segmentType = 'exercise';
+  } else if (/box|punch|combo|jab|cross|hook|uppercut/i.test(lower)) {
+    activityName = 'Boxing Rounds';
+    segmentType = 'combo';
+    activityType = 'combos';
+  }
+
+  let difficulty: 'rookie' | 'beginner' | 'intermediate' | 'advanced' | 'pro' = 'beginner';
+  if (/advanced|pro|hard|intense|brutal|killer/i.test(lower)) {
+    difficulty = 'advanced';
+  } else if (/intermediate|medium|moderate/i.test(lower)) {
+    difficulty = 'intermediate';
+  }
+
+  const warmupPhase: WorkoutPhase = {
+    id: generateId(),
+    name: 'Dynamic Warmup',
+    repeats: 1,
+    section: 'warmup',
+    phaseType: 'continuous',
+    segments: [
+      { id: generateId(), name: 'Jump Rope', type: 'active', segmentType: 'exercise', duration: 120, activityType: 'run' },
+      { id: generateId(), name: 'Active Rest', type: 'rest', segmentType: 'rest', duration: 30 },
+      { id: generateId(), name: 'Shadow Boxing', type: 'active', segmentType: 'shadowboxing', duration: 120, activityType: 'shadowbox' },
+    ],
+  };
+
+  const grindSegments: WorkoutSegment[] = [
+    { id: generateId(), name: activityName, type: 'active', segmentType, duration: workDuration, activityType },
+  ];
+  if (restDuration > 0) {
+    grindSegments.push({ id: generateId(), name: 'Rest', type: 'rest', segmentType: 'rest', duration: restDuration });
+  }
+
+  const grindPhase: WorkoutPhase = {
+    id: generateId(),
+    name: 'Main Rounds',
+    repeats: rounds,
+    section: 'grind',
+    phaseType: 'circuit',
+    segments: grindSegments,
+  };
+
+  const cooldownPhase: WorkoutPhase = {
+    id: generateId(),
+    name: 'Cooldown',
+    repeats: 1,
+    section: 'cooldown',
+    phaseType: 'continuous',
+    segments: [
+      { id: generateId(), name: 'Light Shadow', type: 'active', segmentType: 'shadowboxing', duration: 90, activityType: 'shadowbox' },
+      { id: generateId(), name: 'Stretch', type: 'active', segmentType: 'exercise', duration: 120, activityType: 'custom' },
+    ],
+  };
+
+  const skipWarmup = /no\s*warm\s*up|skip\s*warm\s*up/i.test(lower);
+  const skipCooldown = /no\s*cool\s*down|skip\s*cool\s*down/i.test(lower);
+
+  const warmupPhases = skipWarmup ? [] : [warmupPhase];
+  const cooldownPhases = skipCooldown ? [] : [cooldownPhase];
+
+  const warmupDur = warmupPhases.reduce((sum, p) => sum + p.segments.reduce((s, seg) => s + seg.duration, 0) * p.repeats, 0);
+  const grindDur = grindSegments.reduce((s, seg) => s + seg.duration, 0) * rounds;
+  const cooldownDur = cooldownPhases.reduce((sum, p) => sum + p.segments.reduce((s, seg) => s + seg.duration, 0) * p.repeats, 0);
+  const totalDuration = warmupDur + grindDur + cooldownDur;
+
+  let name = activityName;
+  if (rounds >= 6) name = `Full ${activityName} Session`;
+  else if (rounds <= 2) name = `Quick ${activityName}`;
+
+  return {
+    id: generateId(),
+    name,
+    icon: 'fitness',
+    difficulty,
+    totalDuration,
+    isPreset: false,
+    isArchived: false,
+    createdAt: new Date().toISOString(),
+    timesCompleted: 0,
+    sections: {
+      warmup: warmupPhases,
+      grind: [grindPhase],
+      cooldown: cooldownPhases,
+    },
+    megasetRepeats: 1,
+    tags: detectTags(prompt),
+  };
+}
+
+/** Alias for evaluatePromptQuality for backward compatibility. */
 export const checkPromptQuality = evaluatePromptQuality;
+
+const VALID_COMBO_TOKENS = new Set([
+  '1', '2', '3', '4', '5', '6', '7', '8',
+  'SLIP L', 'SLIP R', 'ROLL L', 'ROLL R', 'DUCK', 'PULL', 'BLOCK', 'PARRY',
+  'STEP IN', 'STEP OUT', 'CIRCLE L', 'CIRCLE R', 'PIVOT',
+]);
+
+function isValidComboToken(token: string): boolean {
+  return VALID_COMBO_TOKENS.has(token.toUpperCase().trim());
+}
+
+function repairCombo(combo: string[]): string[] {
+  let repaired: string[] = [];
+
+  for (const token of combo) {
+    if (token.includes('-')) {
+      const parts = token.split('-').map(p => p.trim()).filter(p => p.length > 0);
+      repaired.push(...parts);
+    } else {
+      repaired.push(token);
+    }
+  }
+
+  repaired = repaired
+    .map(t => t.trim())
+    .filter(t => t.length > 0)
+    .filter(t => isValidComboToken(t));
+
+  if (repaired.length <= 1) {
+    repaired = ['1', '2'];
+  }
+
+  return repaired;
+}
+
+/**
+ * Layer 3 post-processor: repairs malformed combos and fills missing fields.
+ * - Splits hyphen-joined combo tokens (e.g. ["1-2-3"] → ["1","2","3"])
+ * - Strips invalid tokens not in the valid combo set
+ * - Falls back to jab-cross if combo reduces to 1 token
+ * - Ensures megasetRepeats, tags, hasWarmup, hasCooldown have valid defaults
+ * - RULE 13: If no grind phase exists, reclassifies all phases as grind
+ * @param result - The parsed workout result to repair.
+ * @returns A repaired copy of the result.
+ */
+export function autoRepairCombos(result: ParsedWorkoutResult): ParsedWorkoutResult {
+  const repaired = { ...result };
+
+  if (repaired.combos && repaired.combos.length > 0) {
+    repaired.combos = repaired.combos.map(repairCombo);
+  }
+
+  if (repaired.phases && repaired.phases.length > 0) {
+    repaired.phases = repaired.phases.map(phase => {
+      if (phase.combos && phase.combos.length > 0) {
+        return { ...phase, combos: phase.combos.map(repairCombo) };
+      }
+      return phase;
+    });
+  }
+
+  if (repaired.megasetRepeats === undefined || repaired.megasetRepeats < 1) {
+    repaired.megasetRepeats = 1;
+  }
+
+  if (!repaired.tags || !Array.isArray(repaired.tags)) {
+    repaired.tags = [];
+  }
+
+  if (repaired.hasWarmup === undefined) {
+    repaired.hasWarmup = false;
+  }
+
+  if (repaired.hasCooldown === undefined) {
+    repaired.hasCooldown = false;
+  }
+
+  if (repaired.phases && repaired.phases.length > 0) {
+    const hasGrind = repaired.phases.some(p => p.section === 'grind');
+    if (!hasGrind) {
+      repaired.phases = repaired.phases.map(p => ({ ...p, section: 'grind' as const }));
+    }
+  }
+
+  return repaired;
+}

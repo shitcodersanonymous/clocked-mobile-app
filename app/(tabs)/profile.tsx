@@ -120,12 +120,20 @@ export default function ProfileScreen() {
     <View style={[styles.container, { paddingTop: Platform.OS === 'web' ? webTopInset : insets.top }]}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Profile</Text>
-        <TouchableOpacity
-          onPress={() => router.push('/settings')}
-          style={styles.settingsBtn}
-        >
-          <Ionicons name="settings-outline" size={22} color={colors.dark.mutedForeground} />
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 12 }}>
+          <TouchableOpacity
+            onPress={() => router.push('/edit-profile')}
+            style={styles.settingsBtn}
+          >
+            <Ionicons name="create-outline" size={22} color={colors.dark.mutedForeground} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => router.push('/settings')}
+            style={styles.settingsBtn}
+          >
+            <Ionicons name="settings-outline" size={22} color={colors.dark.mutedForeground} />
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView

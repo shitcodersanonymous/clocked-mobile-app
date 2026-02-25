@@ -1,3 +1,15 @@
+/**
+ * Combo Parser — Tokenizes and normalizes boxing combo notation.
+ *
+ * Converts human-readable combo strings (e.g. "jab cross hook", "1-2-3-slip left")
+ * into standardized move token arrays. Handles punches (1–8), defensive moves
+ * (slips, rolls, pulls, blocks), footwork (steps, circles, pivots), and
+ * compound multi-word moves.
+ *
+ * @module comboParser
+ */
+
+/** Maps punch name aliases to standardized punch numbers (1–8). */
 export const PUNCH_MAP: Record<string, string> = {
   'jab': '1',
   'j': '1',
@@ -32,6 +44,7 @@ export const PUNCH_MAP: Record<string, string> = {
   '8': '8',
 };
 
+/** Maps defensive move aliases to standardized defense tokens (e.g. 'SLIP L', 'ROLL R'). */
 export const DEFENSE_MAP: Record<string, string> = {
   'slip': 'SLIP L',
   'slip l': 'SLIP L',
@@ -56,6 +69,7 @@ export const DEFENSE_MAP: Record<string, string> = {
   'parry': 'PARRY',
 };
 
+/** Maps footwork/movement aliases to standardized movement tokens (e.g. 'STEP IN', 'CIRCLE L'). */
 export const MOVEMENT_MAP: Record<string, string> = {
   'step in': 'STEP IN',
   'stepin': 'STEP IN',
@@ -79,6 +93,12 @@ const ALL_MOVES: Record<string, string> = {
   ...MOVEMENT_MAP,
 };
 
+/**
+ * Parses a free-form combo string into an array of standardized move tokens.
+ * Handles dash-separated notation, named punches, defense, and 'double'/'triple' prefixes.
+ * @param input - Raw combo string (e.g. "1-2-slip left-3" or "jab cross hook").
+ * @returns Array of normalized move tokens (e.g. ['1', '2', 'SLIP L', '3']).
+ */
 export function parseComboString(input: string): string[] {
   if (!input || input.trim() === '') return [];
   
@@ -186,6 +206,12 @@ function resolveMoveToken(
   return { move: null, consumed: 1 };
 }
 
+/**
+ * Checks whether a text string contains any recognizable boxing combo notation.
+ * Used to determine if a prompt includes combo instructions.
+ * @param input - Text to check.
+ * @returns True if combo notation (punch numbers, names, or defense keywords) is found.
+ */
 export function containsComboNotation(input: string): boolean {
   const normalized = input.toLowerCase();
   
@@ -202,6 +228,12 @@ export function containsComboNotation(input: string): boolean {
   return false;
 }
 
+/**
+ * Extracts raw combo strings from a workout prompt using multiple pattern strategies:
+ * dash-separated sequences, "combo:" labels, and quoted strings with combo notation.
+ * @param prompt - The full workout prompt text.
+ * @returns Array of raw combo strings to be parsed individually.
+ */
 export function extractCombosFromPrompt(prompt: string): string[] {
   const combos: string[] = [];
   const normalized = prompt.toLowerCase();
@@ -229,6 +261,11 @@ export function extractCombosFromPrompt(prompt: string): string[] {
   return combos;
 }
 
+/**
+ * Validates that every token in a parsed combo is a recognized move.
+ * @param combo - Array of move tokens to validate.
+ * @returns True if all tokens are valid punches, defense, or movement moves.
+ */
 export function isValidCombo(combo: string[]): boolean {
   if (!combo || combo.length === 0) return false;
   
@@ -241,6 +278,11 @@ export function isValidCombo(combo: string[]): boolean {
   return combo.every(move => validMoves.has(move));
 }
 
+/**
+ * Formats a parsed combo array into a display string with dash separators.
+ * @param combo - Array of move tokens.
+ * @returns Display string (e.g. "1 - 2 - SLIP L - 3").
+ */
 export function formatComboDisplay(combo: string[]): string {
   return combo.join(' - ');
 }

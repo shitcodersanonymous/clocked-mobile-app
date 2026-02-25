@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
 import { UserProfile } from '@/lib/types';
 import { getLevelFromXP, Prestige } from '@/lib/xpSystem';
+import { playSoundEffect } from '@/hooks/useSoundEffects';
 
 interface UserStore {
   user: UserProfile | null;
@@ -11,7 +12,7 @@ interface UserStore {
   setUser: (user: UserProfile | null) => void;
   updateUser: (updates: Partial<UserProfile>) => void;
   completeOnboarding: (profile: Partial<UserProfile>) => void;
-  addXP: (amount: number) => void;
+  addXP: (amount: number, playSound?: boolean) => void;
   incrementStreak: () => void;
   resetStreak: () => void;
 }
@@ -60,13 +61,20 @@ export const useUserStore = create<UserStore>()(
           } as UserProfile,
         }),
 
-      addXP: (amount) =>
+      addXP: (amount, playSound = false) =>
         set((state) => {
           if (!state.user) return state;
 
           const newTotalXP = state.user.totalXP + amount;
           const prestige = (state.user.prestige || 'beginner') as Prestige;
           const newLevel = getLevelFromXP(prestige, newTotalXP);
+          const didLevelUp = newLevel > (state.user.currentLevel || 1);
+
+          if (didLevelUp) {
+            playSoundEffect.levelUp();
+          } else if (playSound) {
+            playSoundEffect.xp();
+          }
 
           return {
             user: {

@@ -222,11 +222,11 @@ export default function QuickSessionScreen() {
       const allWorkouts = [entry, ...completedWorkouts];
       const stats = computePostLogStats(allWorkouts, user);
       updateUser({
-        workoutsCompleted: stats.workouts_completed,
-        currentStreak: stats.current_streak,
-        longestStreak: stats.longest_streak,
-        lastWorkoutDate: stats.last_workout_date,
-        totalTrainingSeconds: stats.total_training_seconds,
+        workoutsCompleted: stats.workoutsCompleted,
+        currentStreak: stats.currentStreak,
+        longestStreak: stats.longestStreak,
+        lastWorkoutDate: stats.lastWorkoutDate,
+        totalTrainingSeconds: stats.totalTrainingSeconds,
       });
     }
 

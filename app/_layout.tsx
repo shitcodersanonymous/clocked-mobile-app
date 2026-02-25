@@ -7,6 +7,8 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { queryClient } from "@/lib/query-client";
+import { ToastContainer } from "@/hooks/useToast";
+import { usePresetSeeding } from "@/hooks/usePresetSeeding";
 import colors from "@/constants/colors";
 
 SplashScreen.preventAutoHideAsync();
@@ -55,11 +57,17 @@ function RootLayoutNav() {
         name="gloves"
         options={{ title: "Gloves" }}
       />
+      <Stack.Screen
+        name="edit-profile"
+        options={{ headerShown: false }}
+      />
     </Stack>
   );
 }
 
 export default function RootLayout() {
+  usePresetSeeding();
+
   useEffect(() => {
     SplashScreen.hideAsync();
   }, []);
@@ -71,6 +79,7 @@ export default function RootLayout() {
           <KeyboardProvider>
             <StatusBar barStyle="light-content" backgroundColor={colors.dark.background} />
             <RootLayoutNav />
+            <ToastContainer />
           </KeyboardProvider>
         </GestureHandlerRootView>
       </QueryClientProvider>
