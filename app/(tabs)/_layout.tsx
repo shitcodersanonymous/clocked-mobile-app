@@ -15,7 +15,12 @@ const SURFACE = colors.dark.surface1;
 
 function NativeTabLayout() {
   return (
-    <NativeTabs>
+    <NativeTabs
+      screenOptions={{
+        tabBarActiveTintColor: VOLT,
+        tabBarInactiveTintColor: INACTIVE,
+      }}
+    >
       <NativeTabs.Trigger name="index">
         <Icon sf={{ default: "house", selected: "house.fill" }} />
         <Label>Home</Label>
