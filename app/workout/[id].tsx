@@ -26,6 +26,7 @@ import Animated, {
   FadeIn,
   FadeOut,
 } from 'react-native-reanimated';
+import Svg, { Circle } from 'react-native-svg';
 import colors from '@/constants/colors';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useUserStore } from '@/stores/userStore';
@@ -51,6 +52,7 @@ import {
   isMaxLevel,
   PRESTIGE_ORDER,
   calculateSessionXP,
+  getLevelProgress,
 } from '@/lib/xpSystem';
 import { computePostLogStats, computePostL100Increments } from '@/lib/workoutTracking';
 import { checkBadges, sumBadgeXP, BadgeStats, Badge } from '@/data/badges';
@@ -1039,11 +1041,32 @@ export default function WorkoutSessionScreen() {
     <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <View style={styles.topBar}>
         <View style={styles.topBarLeft}>
-          <TouchableOpacity style={styles.topBarBtn} onPress={handleExit} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-            <Ionicons name="close" size={22} color={colors.dark.foreground} />
+          <TouchableOpacity style={styles.topBarBtnPill} onPress={handleExit} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Ionicons name="arrow-back" size={16} color={colors.dark.foreground} />
+            <Ionicons name="home-outline" size={16} color={colors.dark.foreground} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.topBarBtn}
+            onPress={() => {
+              Alert.alert('Restart Workout', 'Restart from the beginning?', [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Restart',
+                  onPress: () => {
+                    setCurrentSegmentIndex(-1);
+                    setTimeRemaining(10);
+                    setTotalElapsed(0);
+                    setIsPaused(true);
+                    setAccumulatedXP(0);
+                  },
+                },
+              ]);
+            }}
+          >
+            <Ionicons name="refresh" size={16} color={colors.dark.foreground} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.topBarBtn} onPress={handleCompleteEarly}>
-            <Ionicons name="checkmark" size={20} color={accentColor} />
+            <Ionicons name="checkmark-circle-outline" size={18} color={accentColor} />
           </TouchableOpacity>
         </View>
         <View style={styles.topBarRight}>
@@ -1141,15 +1164,79 @@ export default function WorkoutSessionScreen() {
           </Text>
         )}
 
-        <View style={styles.timerContainer}>
-          <View style={styles.timerRing}>
-            <View style={styles.timerRingTrack}>
-              <View style={[styles.timerRingFill, { width: `${timerProgress * 100}%`, backgroundColor: accentColor }]} />
+        <View style={styles.arcTimerArea}>
+          <View style={styles.arcTimerContainer}>
+            {(() => {
+              const SIZE = 260;
+              const STROKE_WIDTH = 5;
+              const GLOW_STROKE = 10;
+              const R = (SIZE - GLOW_STROKE) / 2 - 4;
+              const C = 2 * Math.PI * R;
+              const ARC_FRAC = 0.75;
+              const ARC_LEN = C * ARC_FRAC;
+              const GAP_LEN = C - ARC_LEN;
+              const START_OFFSET = -(C * (135 / 360));
+              const filledLen = ARC_LEN * timerProgress;
+              return (
+                <Svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
+                  <Circle
+                    cx={SIZE / 2}
+                    cy={SIZE / 2}
+                    r={R}
+                    fill="none"
+                    stroke={colors.dark.surface3}
+                    strokeWidth={STROKE_WIDTH}
+                    strokeDasharray={`${ARC_LEN} ${GAP_LEN}`}
+                    strokeDashoffset={START_OFFSET}
+                    strokeLinecap="round"
+                  />
+                  <Circle
+                    cx={SIZE / 2}
+                    cy={SIZE / 2}
+                    r={R}
+                    fill="none"
+                    stroke={accentColor}
+                    strokeWidth={GLOW_STROKE}
+                    strokeDasharray={`${filledLen} ${C - filledLen}`}
+                    strokeDashoffset={START_OFFSET}
+                    strokeLinecap="round"
+                    opacity={0.35}
+                  />
+                  <Circle
+                    cx={SIZE / 2}
+                    cy={SIZE / 2}
+                    r={R}
+                    fill="none"
+                    stroke={accentColor}
+                    strokeWidth={STROKE_WIDTH}
+                    strokeDasharray={`${filledLen} ${C - filledLen}`}
+                    strokeDashoffset={START_OFFSET}
+                    strokeLinecap="round"
+                  />
+                </Svg>
+              );
+            })()}
+            <View style={styles.arcTimerTextWrap}>
+              <Text style={[styles.timerText, { color: accentColor }]}>
+                {formatTime(Math.max(0, Math.floor(timeRemaining)))}
+              </Text>
             </View>
           </View>
-          <Text style={[styles.timerText, { color: accentColor }]}>
-            {formatTime(Math.max(0, Math.floor(timeRemaining)))}
-          </Text>
+          <View style={styles.verticalXPBar}>
+            <Text style={[styles.verticalXPLabel, { color: accentColor }]}>Lvl {liveLevel + 1}</Text>
+            <View style={styles.verticalXPTrack}>
+              <View
+                style={[
+                  styles.verticalXPFill,
+                  {
+                    height: `${Math.min(getLevelProgress(prestige, liveLevel, (user?.totalXP || 0) + accumulatedXP), 100)}%`,
+                    backgroundColor: accentColor,
+                  },
+                ]}
+              />
+            </View>
+            <Text style={[styles.verticalXPLabel, { color: accentColor }]}>Lvl {liveLevel}</Text>
+          </View>
         </View>
 
         <View style={styles.segmentNameRow}>
@@ -1238,14 +1325,6 @@ export default function WorkoutSessionScreen() {
             {isPreparation ? '0' : currentSegmentIndex + 1}/{totalSegments}
           </Text>
         </View>
-        <View style={styles.timerXPBarContainer}>
-          <TimerXPBar
-            prestige={prestige}
-            level={liveLevel}
-            totalXP={(user?.totalXP || 0) + accumulatedXP}
-          />
-        </View>
-
         <View style={styles.controls}>
           <TouchableOpacity
             style={[styles.controlBtn, isPreparation && styles.controlBtnDisabled]}
@@ -1320,10 +1399,21 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     gap: 4,
   },
-  topBarBtn: {
-    width: 40,
-    height: 40,
+  topBarBtnPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     borderRadius: 20,
+    backgroundColor: colors.dark.surface1,
+    borderWidth: 1,
+    borderColor: colors.dark.surface3,
+  },
+  topBarBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: colors.dark.surface1,
     borderWidth: 1,
     borderColor: colors.dark.surface3,
@@ -1371,28 +1461,52 @@ const styles = StyleSheet.create({
     gap: 6,
     marginBottom: 8,
   },
-  timerContainer: {
+  arcTimerArea: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    justifyContent: 'center',
+    marginBottom: 12,
+    width: '100%',
   },
-  timerRing: {
+  arcTimerContainer: {
     width: 260,
-    marginBottom: 8,
+    height: 260,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  timerRingTrack: {
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: colors.dark.surface3,
-    overflow: 'hidden',
-  },
-  timerRingFill: {
-    height: '100%',
-    borderRadius: 2,
+  arcTimerTextWrap: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   timerText: {
     fontSize: 64,
     fontWeight: '900' as const,
     fontVariant: ['tabular-nums'],
+  },
+  verticalXPBar: {
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    height: 200,
+    marginLeft: -8,
+  },
+  verticalXPLabel: {
+    fontSize: 10,
+    fontWeight: '800' as const,
+    letterSpacing: 0.5,
+  },
+  verticalXPTrack: {
+    flex: 1,
+    width: 6,
+    backgroundColor: colors.dark.surface3,
+    borderRadius: 3,
+    marginVertical: 4,
+    overflow: 'hidden',
+    justifyContent: 'flex-end',
+  },
+  verticalXPFill: {
+    width: '100%',
+    borderRadius: 3,
   },
   segmentNameRow: {
     flexDirection: 'row',
@@ -1871,9 +1985,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600' as const,
     color: colors.dark.foreground,
-  },
-  timerXPBarContainer: {
-    marginBottom: 12,
   },
   comboXPPopContainer: {
     position: 'absolute',
