@@ -18,15 +18,28 @@ import * as Speech from 'expo-speech';
 import * as Haptics from 'expo-haptics';
 import Animated, {
   useAnimatedStyle,
+  useAnimatedProps,
   withTiming,
   withSequence,
   withSpring,
   useSharedValue,
   runOnJS,
+  cancelAnimation,
+  Easing,
   FadeIn,
   FadeOut,
 } from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
+
+const ARC_SIZE = 260;
+const ARC_GLOW_STROKE = 10;
+const ARC_STROKE_WIDTH = 5;
+const ARC_R = (ARC_SIZE - ARC_GLOW_STROKE) / 2 - 4;
+const ARC_C = 2 * Math.PI * ARC_R;
+const ARC_FRAC = 0.75;
+const ARC_LEN = ARC_C * ARC_FRAC;
+const ARC_START_OFFSET = -(ARC_C * (135 / 360));
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 import colors from '@/constants/colors';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useUserStore } from '@/stores/userStore';
@@ -386,6 +399,8 @@ export default function WorkoutSessionScreen() {
   const sessionActiveRef = useRef(false);
   const prevSegmentIndexRef = useRef<number>(-1);
   const xpAwardedRef = useRef(false);
+  const arcProgressSV = useSharedValue(1);
+  const prevArcSegmentRef = useRef(-1);
 
   const currentSegment = flatSegments[currentSegmentIndex];
   const nextSegment = flatSegments[currentSegmentIndex + 1];
@@ -400,6 +415,15 @@ export default function WorkoutSessionScreen() {
   );
 
   const accentColor = isChampionship ? colors.dark.yellow : isCooldown ? colors.dark.blue : colors.dark.volt;
+
+  const animatedGlowProps = useAnimatedProps(() => {
+    const filled = ARC_LEN * arcProgressSV.value;
+    return { strokeDasharray: [filled, ARC_C - filled] as unknown as string };
+  });
+  const animatedFillProps = useAnimatedProps(() => {
+    const filled = ARC_LEN * arcProgressSV.value;
+    return { strokeDasharray: [filled, ARC_C - filled] as unknown as string };
+  });
 
   const prestige = (user?.prestige || 'beginner') as Prestige;
   const streakMultiplier = getStreakMultiplier(user?.currentStreak || 0);
@@ -609,6 +633,23 @@ export default function WorkoutSessionScreen() {
       if (interval) clearInterval(interval);
     };
   }, [isRunning, isPaused, isPreparation, currentSegment, streakMultiplier, getXPPerSecond]);
+
+  useEffect(() => {
+    const segDur = isPreparation ? 10 : (currentSegment?.duration || 1);
+    const progress = Math.min(1, Math.max(0, timeRemaining / segDur));
+
+    if (currentSegmentIndex !== prevArcSegmentRef.current) {
+      prevArcSegmentRef.current = currentSegmentIndex;
+      cancelAnimation(arcProgressSV);
+      arcProgressSV.value = 1;
+      arcProgressSV.value = withTiming(progress, { duration: 800, easing: Easing.linear });
+    } else if (isRunning && !isPaused) {
+      arcProgressSV.value = withTiming(progress, { duration: 1050, easing: Easing.linear });
+    } else {
+      cancelAnimation(arcProgressSV);
+      arcProgressSV.value = progress;
+    }
+  }, [timeRemaining, currentSegmentIndex, isRunning, isPaused, isPreparation, currentSegment]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextState: AppStateStatus) => {
@@ -1034,9 +1075,6 @@ export default function WorkoutSessionScreen() {
     (nextSegment?.segmentType === 'combo' || nextSegment?.segmentType === 'shadowboxing' ||
      nextSegment?.segmentType === 'speedbag' || nextSegment?.segmentType === 'doubleend');
 
-  const segDuration = isPreparation ? 10 : (currentSegment?.duration || 1);
-  const timerProgress = Math.min(1, Math.max(0, timeRemaining / segDuration));
-
   return (
     <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <View style={styles.topBar}>
@@ -1167,51 +1205,42 @@ export default function WorkoutSessionScreen() {
         <View style={styles.arcTimerArea}>
           <View style={styles.arcTimerContainer}>
             {(() => {
-              const SIZE = 260;
-              const STROKE_WIDTH = 5;
-              const GLOW_STROKE = 10;
-              const R = (SIZE - GLOW_STROKE) / 2 - 4;
-              const C = 2 * Math.PI * R;
-              const ARC_FRAC = 0.75;
-              const ARC_LEN = C * ARC_FRAC;
-              const GAP_LEN = C - ARC_LEN;
-              const START_OFFSET = -(C * (135 / 360));
-              const filledLen = ARC_LEN * timerProgress;
+              const GAP_LEN = ARC_C - ARC_LEN;
               return (
-                <Svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
+                <Svg width={ARC_SIZE} height={ARC_SIZE} viewBox={`0 0 ${ARC_SIZE} ${ARC_SIZE}`}>
                   <Circle
-                    cx={SIZE / 2}
-                    cy={SIZE / 2}
-                    r={R}
+                    cx={ARC_SIZE / 2}
+                    cy={ARC_SIZE / 2}
+                    r={ARC_R}
                     fill="none"
                     stroke={colors.dark.surface3}
-                    strokeWidth={STROKE_WIDTH}
+                    strokeWidth={ARC_STROKE_WIDTH}
                     strokeDasharray={`${ARC_LEN} ${GAP_LEN}`}
-                    strokeDashoffset={START_OFFSET}
+                    strokeDashoffset={ARC_START_OFFSET}
                     strokeLinecap="round"
                   />
-                  <Circle
-                    cx={SIZE / 2}
-                    cy={SIZE / 2}
-                    r={R}
+                  <AnimatedCircle
+                    cx={ARC_SIZE / 2}
+                    cy={ARC_SIZE / 2}
+                    r={ARC_R}
                     fill="none"
                     stroke={accentColor}
-                    strokeWidth={GLOW_STROKE}
-                    strokeDasharray={`${filledLen} ${C - filledLen}`}
-                    strokeDashoffset={START_OFFSET}
+                    strokeWidth={ARC_GLOW_STROKE}
+                    strokeDashoffset={ARC_START_OFFSET}
                     strokeLinecap="round"
                     opacity={0.35}
+                    animatedProps={animatedGlowProps}
                   />
-                  <Circle
-                    cx={SIZE / 2}
-                    cy={SIZE / 2}
-                    r={R}
+                  <AnimatedCircle
+                    cx={ARC_SIZE / 2}
+                    cy={ARC_SIZE / 2}
+                    r={ARC_R}
                     fill="none"
                     stroke={accentColor}
-                    strokeWidth={STROKE_WIDTH}
-                    strokeDasharray={`${filledLen} ${C - filledLen}`}
-                    strokeDashoffset={START_OFFSET}
+                    strokeWidth={ARC_STROKE_WIDTH}
+                    strokeDashoffset={ARC_START_OFFSET}
                     strokeLinecap="round"
+                    animatedProps={animatedFillProps}
                   />
                 </Svg>
               );
