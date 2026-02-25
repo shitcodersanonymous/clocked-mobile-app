@@ -2,25 +2,42 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Workout } from '@/lib/types';
+import {
+  COMPLETE_BEGINNER_PRESET_WORKOUTS,
+  BEGINNER_PRESET_WORKOUTS,
+  INTERMEDIATE_PRESET_WORKOUTS,
+  ADVANCED_PRESET_WORKOUTS,
+  PRO_PRESET_WORKOUTS,
+  COACH_PRESET_WORKOUTS,
+} from '@/data/presetWorkouts';
 
 interface WorkoutStore {
   workouts: Workout[];
   archivedWorkouts: Workout[];
+  presetsLoaded: boolean;
   addWorkout: (workout: Workout) => void;
   updateWorkout: (id: string, updates: Partial<Workout>) => void;
   deleteWorkout: (id: string) => void;
   archiveWorkout: (id: string) => void;
   restoreWorkout: (id: string) => void;
   permanentlyDeleteArchived: (id: string) => void;
+  loadCompleteBeginnerPresets: () => void;
+  loadBeginnerPresets: () => void;
+  loadIntermediatePresets: () => void;
+  loadAdvancedPresets: () => void;
+  loadProPresets: () => void;
+  loadCoachPresets: () => void;
+  clearPresets: () => void;
   markWorkoutUsed: (id: string) => void;
   reorderWorkouts: (orderedIds: string[]) => void;
 }
 
 export const useWorkoutStore = create<WorkoutStore>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       workouts: [],
       archivedWorkouts: [],
+      presetsLoaded: false,
 
       addWorkout: (workout) =>
         set((state) => ({
@@ -66,6 +83,66 @@ export const useWorkoutStore = create<WorkoutStore>()(
         set((state) => ({
           archivedWorkouts: state.archivedWorkouts.filter((w) => w.id !== id),
         })),
+
+      clearPresets: () =>
+        set((state) => ({
+          workouts: state.workouts.filter((w) => !w.isPreset),
+          presetsLoaded: false,
+        })),
+
+      loadCompleteBeginnerPresets: () => {
+        const { workouts } = get();
+        const nonPresetWorkouts = workouts.filter((w) => !w.isPreset);
+        set({
+          workouts: [...COMPLETE_BEGINNER_PRESET_WORKOUTS, ...nonPresetWorkouts],
+          presetsLoaded: true,
+        });
+      },
+
+      loadBeginnerPresets: () => {
+        const { workouts } = get();
+        const nonPresetWorkouts = workouts.filter((w) => !w.isPreset);
+        set({
+          workouts: [...BEGINNER_PRESET_WORKOUTS, ...nonPresetWorkouts],
+          presetsLoaded: true,
+        });
+      },
+
+      loadIntermediatePresets: () => {
+        const { workouts } = get();
+        const nonPresetWorkouts = workouts.filter((w) => !w.isPreset);
+        set({
+          workouts: [...INTERMEDIATE_PRESET_WORKOUTS, ...nonPresetWorkouts],
+          presetsLoaded: true,
+        });
+      },
+
+      loadAdvancedPresets: () => {
+        const { workouts } = get();
+        const nonPresetWorkouts = workouts.filter((w) => !w.isPreset);
+        set({
+          workouts: [...ADVANCED_PRESET_WORKOUTS, ...nonPresetWorkouts],
+          presetsLoaded: true,
+        });
+      },
+
+      loadProPresets: () => {
+        const { workouts } = get();
+        const nonPresetWorkouts = workouts.filter((w) => !w.isPreset);
+        set({
+          workouts: [...PRO_PRESET_WORKOUTS, ...nonPresetWorkouts],
+          presetsLoaded: true,
+        });
+      },
+
+      loadCoachPresets: () => {
+        const { workouts } = get();
+        const nonPresetWorkouts = workouts.filter((w) => !w.isPreset);
+        set({
+          workouts: [...COACH_PRESET_WORKOUTS, ...nonPresetWorkouts],
+          presetsLoaded: true,
+        });
+      },
 
       markWorkoutUsed: (id) =>
         set((state) => ({

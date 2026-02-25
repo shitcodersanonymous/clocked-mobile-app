@@ -61,6 +61,7 @@ export function getDayOfWeekStats(): {
   isWeekday: boolean;
   isMonday: boolean;
   isFriday: boolean;
+  isSunday: boolean;
 } {
   const day = new Date().getDay();
   return {
@@ -68,15 +69,54 @@ export function getDayOfWeekStats(): {
     isWeekday: day >= 1 && day <= 5,
     isMonday: day === 1,
     isFriday: day === 5,
+    isSunday: day === 0,
   };
 }
 
+export function isDoubleDay(lastWorkoutDate: string | null): boolean {
+  if (!lastWorkoutDate) return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return lastWorkoutDate === today.toISOString().split('T')[0];
+}
+
+export function isHolidayWorkout(): { isNewYears: boolean; isHoliday: boolean } {
+  const now = new Date();
+  const month = now.getMonth();
+  const day = now.getDate();
+
+  const isNewYears = month === 0 && day === 1;
+
+  const holidays = [
+    [0, 1],
+    [6, 4],
+    [11, 25],
+    [11, 31],
+  ];
+
+  const isHoliday = holidays.some(([m, d]) => month === m && day === d);
+
+  return { isNewYears, isHoliday };
+}
+
+export function isComeback(lastWorkoutDate: string | null, currentStreak: number): boolean {
+  if (!lastWorkoutDate || currentStreak > 0) return false;
+  const last = new Date(lastWorkoutDate);
+  const now = new Date();
+  const daysSince = Math.floor((now.getTime() - last.getTime()) / 86400000);
+  return daysSince >= 7;
+}
+
 export function computePostL100Increments(
-  prestige: Prestige,
-  completedWorkouts: CompletedWorkout[],
-  profile: UserProfile
-): Record<string, number | boolean> {
-  const increments: Record<string, number | boolean> = {};
+  profile: Record<string, any>,
+  sessionXP: number,
+  flatSegments: Array<{ combo?: string[]; name: string; segmentType?: string; duration: number }>,
+): Record<string, any> {
+  const increments: Record<string, any> = {};
+
+  const prestige = (profile.prestige || 'beginner') as Prestige;
+  const currentLevel = profile.current_level || profile.currentLevel || 1;
+  const isAtL100 = currentLevel >= 100;
 
   const { isMorning, isNight } = getTimeOfDayStats();
   if (isMorning) increments.morningWorkouts = (profile.morningWorkouts || 0) + 1;
@@ -85,23 +125,55 @@ export function computePostL100Increments(
   const dayStats = getDayOfWeekStats();
   if (dayStats.isWeekend) increments.weekendWorkouts = (profile.weekendWorkouts || 0) + 1;
   if (dayStats.isWeekday) increments.weekdayWorkouts = (profile.weekdayWorkouts || 0) + 1;
+  if (dayStats.isMonday) increments.mondayWorkouts = (profile.mondayWorkouts || 0) + 1;
+  if (dayStats.isFriday) increments.fridayWorkouts = (profile.fridayWorkouts || 0) + 1;
+  if (dayStats.isSunday) increments.sundayWorkouts = (profile.sundayWorkouts || 0) + 1;
 
-  const lastDate = profile.lastWorkoutDate ?? null;
-  if (lastDate) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayStr = today.toISOString().split('T')[0];
-    if (lastDate === todayStr) {
-      increments.doubleDays = (profile.doubleDays || 0) + 1;
-    }
+  if (isDoubleDay(profile.lastWorkoutDate || profile.last_workout_date)) {
+    increments.doubleDays = (profile.doubleDays || 0) + 1;
+  }
+
+  const { isNewYears, isHoliday } = isHolidayWorkout();
+  if (isNewYears) increments.newYearsWorkout = true;
+  if (isHoliday) increments.holidayWorkouts = (profile.holidayWorkouts || 0) + 1;
+
+  if (isComeback(profile.lastWorkoutDate || profile.last_workout_date, profile.currentStreak || profile.current_streak || 0)) {
+    increments.comebackCount = (profile.comebackCount || 0) + 1;
+  }
+
+  if (sessionXP > (profile.bestSessionXp || 0)) {
+    increments.bestSessionXp = sessionXP;
+  }
+
+  if (isAtL100) {
+    increments.postL100Sessions = (profile.postL100Sessions || 0) + 1;
+    increments.overflowXp = (profile.overflowXp || 0) + sessionXP;
   }
 
   let punch1 = 0, punch2 = 0, punch3 = 0, punch4 = 0;
   let punch5 = 0, punch6 = 0, punch7 = 0, punch8 = 0;
   let slips = 0, rolls = 0, pullbacks = 0, circles = 0;
 
-  const REP_MULTIPLIER = 5;
+  for (const seg of flatSegments) {
+    if (!seg.combo) continue;
+    for (const move of seg.combo) {
+      const m = move.toLowerCase().trim();
+      if (m === '1') punch1++;
+      else if (m === '2') punch2++;
+      else if (m === '3') punch3++;
+      else if (m === '4') punch4++;
+      else if (m === '5') punch5++;
+      else if (m === '6') punch6++;
+      else if (m === '7') punch7++;
+      else if (m === '8') punch8++;
+      else if (m.startsWith('slip')) slips++;
+      else if (m.startsWith('roll')) rolls++;
+      else if (m.startsWith('pull')) pullbacks++;
+      else if (m.startsWith('circle')) circles++;
+    }
+  }
 
+  const REP_MULTIPLIER = 5;
   increments.punch1Count = (profile.punch1Count || 0) + punch1 * REP_MULTIPLIER;
   increments.punch2Count = (profile.punch2Count || 0) + punch2 * REP_MULTIPLIER;
   increments.punch3Count = (profile.punch3Count || 0) + punch3 * REP_MULTIPLIER;

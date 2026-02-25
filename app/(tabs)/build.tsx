@@ -18,6 +18,7 @@ import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import colors from "@/constants/colors";
 import { DIFFICULTY_COLORS } from "@/constants/colors";
+import { ExercisePickerModal } from "@/components/ui/ExercisePickerModal";
 import { useWorkoutStore } from "@/stores/workoutStore";
 import { useUserStore } from "@/stores/userStore";
 import {
@@ -127,6 +128,7 @@ export default function BuildScreen() {
   const [presetSearch, setPresetSearch] = useState("");
   const [selectedPresetCategory, setSelectedPresetCategory] = useState<string | null>(null);
   const [exerciseInput, setExerciseInput] = useState("");
+  const [showExercisePicker, setShowExercisePicker] = useState(false);
 
   useEffect(() => {
     if (editId) {
@@ -508,6 +510,17 @@ export default function BuildScreen() {
         addSpeedBagDrill={addSpeedBagDrill}
         exerciseInput={exerciseInput}
         setExerciseInput={setExerciseInput}
+      />
+
+      <ExercisePickerModal
+        visible={showExercisePicker}
+        onClose={() => setShowExercisePicker(false)}
+        onConfirm={(exercises) => {
+          for (const ex of exercises) {
+            addSpeedBagDrill(ex);
+          }
+          setShowExercisePicker(false);
+        }}
       />
     </View>
   );
@@ -891,6 +904,13 @@ function ComboBuilderModal(props: ComboBuilderModalProps) {
                 disabled={!exerciseInput.trim()}
               >
                 <Text style={styles.exerciseAddBtnText}>Add Exercise Set</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setShowExercisePicker(true)}
+                style={styles.browseExercisesBtn}
+              >
+                <Ionicons name="list" size={14} color={C.volt} />
+                <Text style={styles.browseExercisesBtnText}>Browse Exercises</Text>
               </TouchableOpacity>
             </View>
           </KeyboardAvoidingView>
@@ -1812,5 +1832,21 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600" as const,
     color: C.background,
+  },
+  browseExercisesBtn: {
+    flexDirection: "row" as const,
+    alignItems: "center" as const,
+    justifyContent: "center" as const,
+    gap: 6,
+    paddingVertical: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: C.volt,
+    backgroundColor: "transparent",
+  },
+  browseExercisesBtnText: {
+    fontSize: 14,
+    fontWeight: "600" as const,
+    color: C.volt,
   },
 });

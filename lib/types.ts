@@ -54,6 +54,15 @@ export interface UserProfile {
   nightWorkouts?: number;
   weekendWorkouts?: number;
   weekdayWorkouts?: number;
+  mondayWorkouts?: number;
+  fridayWorkouts?: number;
+  sundayWorkouts?: number;
+  holidayWorkouts?: number;
+  newYearsWorkout?: boolean;
+  bestSessionXp?: number;
+  postL100Sessions?: number;
+  overflowXp?: number;
+  punchCount?: number;
   punch1Count?: number;
   punch2Count?: number;
   punch3Count?: number;

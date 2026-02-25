@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "My App",
-    "slug": "my-app",
+    "name": "Get Clocked",
+    "slug": "getclocked",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "myapp",
+    "scheme": "getclocked",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -15,10 +15,10 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.myapp"
+      "bundleIdentifier": "com.getclocked.app"
     },
     "android": {
-      "package": "com.myapp",
+      "package": "com.getclocked.app",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",

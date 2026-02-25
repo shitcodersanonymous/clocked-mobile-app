@@ -55,6 +55,11 @@ import {
 import { computePostLogStats, computePostL100Increments } from '@/lib/workoutTracking';
 import { checkBadges, sumBadgeXP, BadgeStats, Badge } from '@/data/badges';
 import { XPBar } from '@/components/ui/XPBar';
+import { TimerXPBar } from '@/components/ui/TimerXPBar';
+import { ComboXPPop } from '@/components/ui/ComboXPPop';
+import { BadgeEarnOverlay } from '@/components/ui/BadgeEarnOverlay';
+import { GloveUnlockOverlay } from '@/components/ui/GloveUnlockOverlay';
+import { checkGloveUnlocks, Glove, GLOVES } from '@/data/gloves';
 
 interface FlatSegment {
   id: string;
@@ -368,6 +373,11 @@ export default function WorkoutSessionScreen() {
   const liveBadgeIdsRef = useRef<Set<string>>(new Set());
   const [liveBadgesEarned, setLiveBadgesEarned] = useState<Array<{ badge: Badge; earnedAt: number }>>([]);
   const [latestBadgePop, setLatestBadgePop] = useState<{ badge: Badge; id: number } | null>(null);
+  const [comboXPPop, setComboXPPop] = useState<{ amount: number; id: number; isChampionship?: boolean } | null>(null);
+  const [badgeOverlay, setBadgeOverlay] = useState<Badge | null>(null);
+  const [gloveUnlockOverlay, setGloveUnlockOverlay] = useState<Glove | null>(null);
+  const badgeOverlayQueue = useRef<Badge[]>([]);
+  const gloveUnlockQueue = useRef<Glove[]>([]);
 
   const lastTickTimeRef = useRef<number>(Date.now());
   const prevLevelRef = useRef<number | null>(null);
@@ -681,6 +691,14 @@ export default function WorkoutSessionScreen() {
         const firstDuration = flatSegments[0]?.duration || 60;
         setTimeRemaining(firstDuration + timeRemaining);
       } else if (currentSegmentIndex < flatSegments.length - 1) {
+        const finishedSeg = flatSegments[currentSegmentIndex];
+        if (finishedSeg?.segmentType === 'combo' && finishedSeg.combo && finishedSeg.combo.length > 0) {
+          const comboXP = calculateComboXP(finishedSeg.combo, finishedSeg.duration);
+          const isChamp = finishedSeg.phaseName.toLowerCase().includes('championship');
+          const finalXP = isChamp ? comboXP * 2 : comboXP;
+          setComboXPPop({ amount: finalXP, id: Date.now(), isChampionship: isChamp });
+          setTimeout(() => setComboXPPop(null), 1500);
+        }
         const nextIdx = currentSegmentIndex + 1;
         const nextDuration = flatSegments[nextIdx]?.duration || 60;
         setCurrentSegmentIndex(nextIdx);
@@ -782,7 +800,13 @@ export default function WorkoutSessionScreen() {
     }
 
     const postLogStats = computePostLogStats(completedWorkouts, user);
-    const postL100 = computePostL100Increments(tier, completedWorkouts, user);
+    const segmentsForTracking = flatSegments.map(s => ({
+      combo: s.combo,
+      name: s.name,
+      segmentType: s.segmentType,
+      duration: s.duration,
+    }));
+    const postL100 = computePostL100Increments(user as any, sessionResult.sessionTotal, segmentsForTracking);
 
     updateUser({
       workoutsCompleted: (user.workoutsCompleted || 0) + 1,
@@ -819,6 +843,20 @@ export default function WorkoutSessionScreen() {
       notes: notes || undefined,
       isManualEntry: false,
     });
+
+    const prevLevel = getLevelFromXP(prestige, user.totalXP || 0);
+    const newLevel = getLevelFromXP(prestige, (user.totalXP || 0) + sessionResult.sessionTotal);
+    const prevUnlocked = new Set(checkGloveUnlocks(prestige, prevLevel, user.currentStreak || 0));
+    const nowUnlocked = checkGloveUnlocks(prestige, newLevel, postLogStats.current_streak);
+    const brandNew = nowUnlocked.filter(id => !prevUnlocked.has(id));
+    if (brandNew.length > 0) {
+      const gloveMap = new Map(Object.entries(GLOVES));
+      const newGloves = brandNew.map(id => gloveMap.get(id)).filter(Boolean) as Glove[];
+      if (newGloves.length > 0) {
+        setGloveUnlockOverlay(newGloves[0]);
+        gloveUnlockQueue.current.push(...newGloves.slice(1));
+      }
+    }
 
     setLogged(true);
   }, [sessionResult, user, workout, totalElapsed, difficultyRating, notes, prestige, badgeStats, completedWorkouts, addXP, updateUser, addEarnedBadges, updateBadgeStats, addCompletedWorkout]);
@@ -1056,6 +1094,36 @@ export default function WorkoutSessionScreen() {
         </View>
       )}
 
+      {comboXPPop && (
+        <View style={styles.comboXPPopContainer}>
+          <ComboXPPop pop={comboXPPop} />
+        </View>
+      )}
+
+      {badgeOverlay && (
+        <BadgeEarnOverlay
+          badge={badgeOverlay}
+          onComplete={() => {
+            setBadgeOverlay(null);
+            if (badgeOverlayQueue.current.length > 0) {
+              setBadgeOverlay(badgeOverlayQueue.current.shift()!);
+            }
+          }}
+        />
+      )}
+
+      {gloveUnlockOverlay && (
+        <GloveUnlockOverlay
+          glove={gloveUnlockOverlay}
+          onComplete={() => {
+            setGloveUnlockOverlay(null);
+            if (gloveUnlockQueue.current.length > 0) {
+              setGloveUnlockOverlay(gloveUnlockQueue.current.shift()!);
+            }
+          }}
+        />
+      )}
+
       <View style={styles.mainContent}>
         {isPreparation ? (
           <Text style={styles.phaseLabel}>GET READY</Text>
@@ -1169,6 +1237,13 @@ export default function WorkoutSessionScreen() {
           <Text style={[styles.progressCount, { color: accentColor }]}>
             {isPreparation ? '0' : currentSegmentIndex + 1}/{totalSegments}
           </Text>
+        </View>
+        <View style={styles.timerXPBarContainer}>
+          <TimerXPBar
+            prestige={prestige}
+            level={liveLevel}
+            totalXP={(user?.totalXP || 0) + accumulatedXP}
+          />
         </View>
 
         <View style={styles.controls}>
@@ -1796,5 +1871,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600' as const,
     color: colors.dark.foreground,
+  },
+  timerXPBarContainer: {
+    marginBottom: 12,
+  },
+  comboXPPopContainer: {
+    position: 'absolute',
+    top: '40%',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    zIndex: 60,
   },
 });
