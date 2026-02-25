@@ -14,6 +14,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import colors, { PRESTIGE_COLORS, BADGE_CATEGORY_COLORS_NATIVE } from '@/constants/colors';
 import { useUserStore } from '@/stores/userStore';
 import { useBadgeStore } from '@/stores/badgeStore';
+import BadgeCollection from '@/components/BadgeCollection';
 import { useHistoryStore } from '@/stores/historyStore';
 import { useGloveStore } from '@/stores/gloveStore';
 import { XPBar } from '@/components/ui/XPBar';
@@ -53,6 +54,7 @@ export default function ProfileScreen() {
   const equippedGlove = useGloveStore((s) => s.equippedGlove);
 
   const [showPrestigePrompt, setShowPrestigePrompt] = useState(false);
+  const [showBadgeCollection, setShowBadgeCollection] = useState(false);
 
   const prestige = (user?.prestige || 'beginner') as Prestige;
   const currentLevel = user?.currentLevel || 1;
@@ -114,6 +116,23 @@ export default function ProfileScreen() {
 
   if (showPrestigePrompt) {
     return <PrestigePromptScreen prestige={prestige} onPrestige={handlePrestige} onDefer={() => setShowPrestigePrompt(false)} />;
+  }
+
+  if (showBadgeCollection) {
+    return (
+      <View style={[styles.container, { paddingTop: Platform.OS === 'web' ? webTopInset : insets.top }]}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Badges</Text>
+          <TouchableOpacity
+            onPress={() => setShowBadgeCollection(false)}
+            style={styles.settingsBtn}
+          >
+            <Ionicons name="close" size={22} color={colors.dark.mutedForeground} />
+          </TouchableOpacity>
+        </View>
+        <BadgeCollection />
+      </View>
+    );
   }
 
   return (
@@ -260,6 +279,15 @@ export default function ProfileScreen() {
               total={total}
             />
           ))}
+          <TouchableOpacity
+            style={styles.viewAllBadgesBtn}
+            onPress={() => setShowBadgeCollection(true)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="grid-outline" size={16} color={colors.dark.volt} />
+            <Text style={styles.viewAllBadgesText}>View All Badges</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.dark.volt} />
+          </TouchableOpacity>
         </View>
 
         <View style={{ height: 120 }} />
@@ -554,6 +582,23 @@ const styles = StyleSheet.create({
     padding: 16,
     borderWidth: 1,
     borderColor: colors.dark.border,
+  },
+  viewAllBadgesBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 14,
+    paddingVertical: 12,
+    borderRadius: 12,
+    backgroundColor: colors.dark.voltDim,
+    borderWidth: 1,
+    borderColor: 'rgba(204,255,0,0.2)',
+  },
+  viewAllBadgesText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: colors.dark.volt,
   },
   sectionHeader: {
     flexDirection: 'row',

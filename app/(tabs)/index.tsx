@@ -16,6 +16,7 @@ import { useUserStore } from "@/stores/userStore";
 import { useWorkoutStore } from "@/stores/workoutStore";
 import { Workout } from "@/lib/types";
 import { WorkoutCard } from "@/components/ui/WorkoutCard";
+import WorkoutPreviewModal from "@/components/WorkoutPreviewModal";
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -28,6 +29,7 @@ export default function HomeScreen() {
 
   const [isReorderMode, setIsReorderMode] = useState(false);
   const [localOrder, setLocalOrder] = useState<string[]>([]);
+  const [previewWorkout, setPreviewWorkout] = useState<Workout | null>(null);
 
   const activeWorkouts = workouts.filter((w) => !w.isArchived);
 
@@ -74,9 +76,12 @@ export default function HomeScreen() {
 
   const handlePlay = useCallback(
     (id: string) => {
-      router.push(`/workout/${id}`);
+      const found = workouts.find((w) => w.id === id);
+      if (found) {
+        setPreviewWorkout(found);
+      }
     },
-    [router]
+    [workouts]
   );
 
   const handleDeletePrompt = useCallback(
@@ -212,6 +217,19 @@ export default function HomeScreen() {
           ))
         )}
       </ScrollView>
+
+      {previewWorkout && (
+        <WorkoutPreviewModal
+          workout={previewWorkout}
+          visible={!!previewWorkout}
+          onClose={() => setPreviewWorkout(null)}
+          onStart={() => {
+            const id = previewWorkout.id;
+            setPreviewWorkout(null);
+            router.push(`/workout/${id}`);
+          }}
+        />
+      )}
     </View>
   );
 }

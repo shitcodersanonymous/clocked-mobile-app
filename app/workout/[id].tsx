@@ -76,6 +76,8 @@ import { BadgeEarnOverlay } from '@/components/ui/BadgeEarnOverlay';
 import { GloveUnlockOverlay } from '@/components/ui/GloveUnlockOverlay';
 import { LevelUpOverlay } from '@/components/ui/LevelUpOverlay';
 import PostWorkoutSummary from '@/components/workout/PostWorkoutSummary';
+import RoundFeedbackPanel from '@/components/workout/RoundFeedbackPanel';
+import VerticalXPBar from '@/components/ui/VerticalXPBar';
 import { checkGloveUnlocks, Glove, GLOVES } from '@/data/gloves';
 
 interface FlatSegment {
@@ -386,6 +388,7 @@ export default function WorkoutSessionScreen() {
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [levelUpLevel, setLevelUpLevel] = useState<number | null>(null);
   const [sessionResult, setSessionResult] = useState<SessionXPBreakdown | null>(null);
+  const [roundFeedbacks, setRoundFeedbacks] = useState<Record<number, 'easy' | 'perfect' | 'hard'>>({});
 
   const liveBadgeIdsRef = useRef<Set<string>>(new Set());
   const [liveBadgesEarned, setLiveBadgesEarned] = useState<Array<{ badge: Badge; earnedAt: number }>>([]);
@@ -1148,17 +1151,13 @@ export default function WorkoutSessionScreen() {
           </View>
           <View style={styles.verticalXPBar}>
             <Text style={[styles.verticalXPLabel, { color: accentColor }]}>Lvl {liveLevel + 1}</Text>
-            <View style={styles.verticalXPTrack}>
-              <View
-                style={[
-                  styles.verticalXPFill,
-                  {
-                    height: `${Math.min(getLevelProgress(prestige, liveLevel, (user?.totalXP || 0) + accumulatedXP), 100)}%`,
-                    backgroundColor: accentColor,
-                  },
-                ]}
-              />
-            </View>
+            <VerticalXPBar
+              currentXP={getXPWithinCurrentLevel(prestige, (user?.totalXP || 0) + accumulatedXP).current}
+              maxXP={getXPWithinCurrentLevel(prestige, (user?.totalXP || 0) + accumulatedXP).required}
+              prestige={prestige}
+              height={160}
+              width={10}
+            />
             <Text style={[styles.verticalXPLabel, { color: accentColor }]}>Lvl {liveLevel}</Text>
           </View>
         </View>
@@ -1190,6 +1189,17 @@ export default function WorkoutSessionScreen() {
           <View style={[styles.comboCard, { borderColor: accentColor + '30' }]}>
             <Text style={[styles.comboCardLabel, { color: accentColor + '99' }]}>UP NEXT</Text>
             <Text style={[styles.comboCardTitle, { color: accentColor }]}>{nextSegment.name || 'FINISH'}</Text>
+          </View>
+        )}
+
+        {isRestSegment && currentSegment?.section === 'grind' && currentSegment?.cumulativeRound != null && !roundFeedbacks[currentSegment.cumulativeRound] && (
+          <View style={{ width: '100%', maxWidth: 300, marginTop: 12 }}>
+            <RoundFeedbackPanel
+              roundNumber={currentSegment.cumulativeRound}
+              onRate={(rating) => {
+                setRoundFeedbacks(prev => ({ ...prev, [currentSegment.cumulativeRound!]: rating }));
+              }}
+            />
           </View>
         )}
 
@@ -1418,19 +1428,6 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '800' as const,
     letterSpacing: 0.5,
-  },
-  verticalXPTrack: {
-    flex: 1,
-    width: 6,
-    backgroundColor: colors.dark.surface3,
-    borderRadius: 3,
-    marginVertical: 4,
-    overflow: 'hidden',
-    justifyContent: 'flex-end',
-  },
-  verticalXPFill: {
-    width: '100%',
-    borderRadius: 3,
   },
   segmentNameRow: {
     flexDirection: 'row',
