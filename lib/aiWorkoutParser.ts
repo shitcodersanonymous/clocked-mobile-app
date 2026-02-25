@@ -464,7 +464,26 @@ const EXERCISE_NAMES: Array<{ pattern: RegExp; name: string }> = [
   { pattern: /med(?:icine)?\s*ball/i, name: 'Med Ball Slams' },
 ];
 
-function parseSupersetFromBlock(text: string): { exercises: SupersetExercise[] | null; restBetween: number | null } {
+function extractExerciseWithDuration(text: string): { name: string; duration: number | null; raw: string } | null {
+  const lower = text.trim().toLowerCase();
+  
+  for (const { pattern, name } of EXERCISE_NAMES) {
+    if (pattern.test(lower)) {
+      const isFreestyle = /freestyle/i.test(lower);
+      const finalName = isFreestyle ? `${name} Freestyle` : name;
+      const dur = parseDurationFromText(text);
+      return { name: finalName, duration: dur, raw: text.trim() };
+    }
+  }
+  
+  return null;
+}
+
+function isBoxingBlock(text: string): boolean {
+  return /shadow\s*box|heavy\s*bag|double[\s-]*end\s*bag|sparring|mitt\s*work|bag\s*work/i.test(text);
+}
+
+function parseSupersetFromBlock(text: string): { exercises: SupersetExercise[] | null; restBetween: number | null; combos: string[][] } {
   const lower = text.toLowerCase();
   
   if (!lower.includes('superset') && !lower.includes('super set') && !lower.includes('alternating')) {
@@ -474,7 +493,7 @@ function parseSupersetFromBlock(text: string): { exercises: SupersetExercise[] |
         exerciseMatches.push(name);
       }
     }
-    if (exerciseMatches.length < 2) return { exercises: null, restBetween: null };
+    if (exerciseMatches.length < 2) return { exercises: null, restBetween: null, combos: [] };
   }
   
   const exercises: SupersetExercise[] = [];
@@ -486,10 +505,11 @@ function parseSupersetFromBlock(text: string): { exercises: SupersetExercise[] |
     }
   }
   
-  if (exercises.length < 2) return { exercises: null, restBetween: null };
+  if (exercises.length < 2) return { exercises: null, restBetween: null, combos: [] };
   
   const rest = parseRestFromText(text);
-  return { exercises, restBetween: rest.duration };
+  const combos = parseCombosFromBlock(text);
+  return { exercises, restBetween: rest.duration, combos };
 }
 
 function parseExerciseSetsFromBlock(text: string): string[][] {
@@ -1138,3 +1158,5 @@ export function evaluatePromptQuality(prompt: string): {
   
   return { isComplete: suggestions.length === 0, suggestions };
 }
+
+export const checkPromptQuality = evaluatePromptQuality;

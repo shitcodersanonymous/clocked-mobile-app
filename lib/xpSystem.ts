@@ -69,6 +69,14 @@ export function getTotalXPForPrestige(prestige: Prestige): number {
   return TIER_CURVES[prestige].totalL100;
 }
 
+export function cumulativeXP(prestige: Prestige, endLevel: number): number {
+  let total = 0;
+  for (let l = 1; l <= endLevel; l++) {
+    total += getXPRequiredForLevel(prestige, l);
+  }
+  return total;
+}
+
 export function getLevelFromXP(prestige: Prestige, totalXP: number): number {
   let cumulative = 0;
   for (let level = 1; level <= 100; level++) {
@@ -182,6 +190,8 @@ export type XPActivityType =
   | 'rest' | 'freestyle' | 'bag_freestyle' | 'bag_combo_bonus'
   | 'shadowboxing' | 'combo'
   | 'active';
+
+export type ActivityType = XPActivityType;
 
 export const ACTIVITY_XP_RATES: Record<XPActivityType, number> = {
   pushups:         0.22,
