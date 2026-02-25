@@ -14,6 +14,7 @@ import { useRouter } from 'expo-router';
 import colors from '@/constants/colors';
 import { GLOVES, TIER_SECTIONS, getGlovesForTier, checkGloveUnlocks, Glove } from '@/data/gloves';
 import { useUserStore } from '@/stores/userStore';
+import { useGloveStore } from '@/stores/gloveStore';
 
 function GloveGridItem({
   glove,
@@ -91,11 +92,13 @@ export default function GlovesScreen() {
   const router = useRouter();
   const user = useUserStore((s) => s.user);
   const updateUser = useUserStore((s) => s.updateUser);
+  const equipGloveStore = useGloveStore((s) => s.equipGlove);
+  const gloveStoreEquipped = useGloveStore((s) => s.equippedGlove);
 
   const prestige = user?.prestige || 'rookie';
   const level = user?.currentLevel || 1;
   const streakDays = user?.currentStreak || 0;
-  const equippedGlove = user?.equippedGlove || 'default';
+  const equippedGlove = gloveStoreEquipped || user?.equippedGlove || 'default';
 
   const unlockedGloves = useMemo(
     () => checkGloveUnlocks(prestige, level, streakDays),
@@ -110,6 +113,7 @@ export default function GlovesScreen() {
     const glove = GLOVES[gloveId];
     if (!glove) return;
     updateUser({ equippedGlove: gloveId });
+    equipGloveStore(gloveId);
     if (Platform.OS === 'web') {
       return;
     }

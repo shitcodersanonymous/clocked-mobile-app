@@ -738,6 +738,9 @@ export default function HistoryScreen() {
       >
         <View style={styles.headerTop}>
           <View style={styles.headerTitleRow}>
+            <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+              <Ionicons name="chevron-back" size={22} color={colors.dark.foreground} />
+            </TouchableOpacity>
             <Ionicons name="time" size={22} color={colors.dark.volt} />
             <Text style={styles.headerTitle}>WORKOUT LOG</Text>
           </View>
@@ -816,6 +819,17 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
+  },
+  backBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.dark.surface1,
+    borderWidth: 1,
+    borderColor: colors.dark.surface3,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 2,
   },
   headerTitle: {
     fontSize: 22,
