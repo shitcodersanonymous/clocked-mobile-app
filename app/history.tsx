@@ -14,6 +14,7 @@ import {
   Pressable,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
 import Animated, {
   FadeIn,
@@ -33,6 +34,7 @@ import {
   generateCoachRecommendation,
   CoachRecommendation,
   ProfileData,
+  recommendationToPrompt,
 } from "@/lib/coachEngine";
 
 const FOCUS_AREA_ICONS: Record<string, string> = {
@@ -380,11 +382,13 @@ function CoachModal({
   onClose,
   recommendation,
   isGenerating,
+  onGenerateWorkout,
 }: {
   visible: boolean;
   onClose: () => void;
   recommendation: CoachRecommendation | null;
   isGenerating: boolean;
+  onGenerateWorkout: () => void;
 }) {
   if (!visible) return null;
 
@@ -591,6 +595,13 @@ function CoachModal({
               >
                 <Text style={styles.coachCloseText}>Close</Text>
               </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.coachGenerateButton}
+                onPress={onGenerateWorkout}
+              >
+                <Ionicons name="flash" size={16} color={colors.dark.background} />
+                <Text style={styles.coachGenerateText}>Generate Workout</Text>
+              </TouchableOpacity>
             </View>
           )}
         </View>
@@ -601,6 +612,7 @@ function CoachModal({
 
 export default function HistoryScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const [showAddModal, setShowAddModal] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showCoach, setShowCoach] = useState(false);
@@ -612,6 +624,13 @@ export default function HistoryScreen() {
   const user = useUserStore((s) => s.user);
 
   const webTopInset = Platform.OS === "web" ? 67 : 0;
+
+  const handleGenerateFromCoach = useCallback(() => {
+    if (!recommendation) return;
+    const prompt = recommendationToPrompt(recommendation);
+    setShowCoach(false);
+    router.push(`/build?coachPrompt=${encodeURIComponent(prompt)}`);
+  }, [recommendation, router]);
 
   const handleCoach = useCallback(() => {
     if (completedWorkouts.length === 0 && !user) {
@@ -772,6 +791,7 @@ export default function HistoryScreen() {
         onClose={() => setShowCoach(false)}
         recommendation={recommendation}
         isGenerating={isGenerating}
+        onGenerateWorkout={handleGenerateFromCoach}
       />
     </View>
   );
@@ -1301,5 +1321,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "600" as const,
     color: colors.dark.foreground,
+  },
+  coachGenerateButton: {
+    flex: 1,
+    flexDirection: "row" as const,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: colors.dark.volt,
+    borderRadius: 12,
+    paddingVertical: 14,
+    marginTop: 8,
+  },
+  coachGenerateText: {
+    color: colors.dark.background,
+    fontSize: 15,
+    fontWeight: "700" as const,
   },
 });

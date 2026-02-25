@@ -252,7 +252,7 @@ export default function HomeScreen() {
           <TouchableOpacity
             style={styles.actionCard}
             activeOpacity={0.7}
-            onPress={() => router.push("/(tabs)/build")}
+            onPress={() => router.push("/build")}
           >
             <Ionicons name="add" size={22} color={colors.dark.volt} />
             <View style={styles.actionCardTextWrap}>
@@ -267,15 +267,15 @@ export default function HomeScreen() {
           <TouchableOpacity
             style={styles.actionCard}
             activeOpacity={0.7}
-            onPress={() => router.push("/quick-session")}
+            onPress={() => router.push("/history")}
           >
-            <Ionicons name="timer-outline" size={22} color={colors.dark.volt} />
+            <Ionicons name="time" size={22} color={colors.dark.volt} />
             <View style={styles.actionCardTextWrap}>
-              <Text style={styles.actionCardTitle}>QUICK</Text>
-              <Text style={styles.actionCardSub}>TIMER</Text>
+              <Text style={styles.actionCardTitle}>WORKOUT</Text>
+              <Text style={styles.actionCardSub}>LOG</Text>
             </View>
             <View style={styles.actionCardBgIcon}>
-              <Ionicons name="timer-outline" size={72} color={colors.dark.mutedForeground} style={{ opacity: 0.08 }} />
+              <Ionicons name="time" size={72} color={colors.dark.mutedForeground} style={{ opacity: 0.08 }} />
             </View>
           </TouchableOpacity>
         </View>
@@ -308,7 +308,7 @@ export default function HomeScreen() {
             <Text style={styles.emptyText}>No workouts yet</Text>
             <TouchableOpacity
               style={styles.emptyButton}
-              onPress={() => router.push("/(tabs)/build")}
+              onPress={() => router.push("/build")}
               activeOpacity={0.8}
             >
               <Text style={styles.emptyButtonText}>Create Your First Workout</Text>

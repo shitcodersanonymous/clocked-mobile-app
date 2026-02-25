@@ -32,6 +32,14 @@ function RootLayoutNav() {
         options={{ headerShown: false, gestureEnabled: false }}
       />
       <Stack.Screen
+        name="build"
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="history"
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
         name="workout/[id]"
         options={{ headerShown: false, gestureEnabled: false }}
       />

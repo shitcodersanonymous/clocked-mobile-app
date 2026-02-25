@@ -7,7 +7,7 @@ A complete boxing/fitness gamification app rebuilt as an Expo React Native mobil
 - **Frontend**: Expo Router (file-based routing) with React Native
 - **State**: Zustand stores with AsyncStorage persistence (no backend DB)
 - **Voice**: expo-speech for workout voice announcements
-- **Navigation**: Bottom tabs (Home, Build, History, Stats, Profile) + stack screens
+- **Navigation**: 4 bottom tabs (Home, My Stats, Fight Club, Profile) + stack screens (Build, History, Workout, etc.)
 
 ## Tech Stack
 - Expo SDK 54, React Native, TypeScript
@@ -24,12 +24,13 @@ A complete boxing/fitness gamification app rebuilt as an Expo React Native mobil
 app/
   _layout.tsx          - Root layout with providers, dark theme
   (tabs)/
-    _layout.tsx        - 5-tab navigation
-    index.tsx          - Home screen (workout list, actions)
-    build.tsx          - Workout builder with combo/exercise system
-    history.tsx        - Completed workout history + coach recommendations
-    stats.tsx          - Stats dashboard, XP bar, streak, badges, heatmap
+    _layout.tsx        - 4-tab navigation (Home, My Stats, Fight Club, Profile)
+    index.tsx          - Home screen (workout list, CREATE SET + WORKOUT LOG actions)
+    stats.tsx          - Stats dashboard: XP/rank, training grid (hours/rounds/calories/intensity), streak, badges, heatmap
+    fight-club.tsx     - Fight Club: Feed (activity posts), Clubs (Early Adopters), Presets (searchable preset workouts)
     profile.tsx        - User profile, prestige, badges, glove display
+  build.tsx            - Workout builder: Custom Build + AI Builder (natural language → workout)
+  history.tsx          - Completed workout history + AI Coach recommendations
   onboarding.tsx       - Multi-step onboarding flow
   workout/[id].tsx     - Active workout session player
   quick-session.tsx    - Quick timer with XP
@@ -49,18 +50,21 @@ lib/
   xpSystem.ts          - XP formulas, prestige, rankings, streak multipliers
   loadoutGenerator.ts  - Auto-generate workouts by experience level
   coachEngine.ts       - 12 deterministic coach recommendation rules (C1-C12)
+  aiWorkoutParser.ts   - Natural language → workout parser (block-based multi-phase)
+  comboParser.ts       - Punch/defense notation parser (1-2-SLIP-3 style)
   workoutTracking.ts   - Streak logic, post-workout stat increments, punch/defense counting
   workoutHistoryAnalysis.ts - History trend analysis
   utils.ts             - formatTime, generateId, formatDuration
 
 data/
-  badges.ts            - 88 badges across 7 categories
+  badges.ts            - 88 base badges + combined exports (ALL_BADGES_COMBINED = 234 total)
+  postL100Badges.ts    - 146 post-L100 endgame badges across 13 categories
   gloves.ts            - 52 gloves + unlock logic by prestige/level
   comboPools.ts        - Combo pools by difficulty tier
   presetComboLibrary.ts - 740 preset combos across 5 tiers
   speedBagDrills.ts    - 14 speed bag drills
   comboPresets.ts      - Punch/defense keys by difficulty
-  presetWorkouts.ts    - Preset workout arrays (awaiting definitions)
+  presetWorkouts.ts    - Preset workout arrays by difficulty tier
 
 components/ui/
   XPBar.tsx            - XP progress bar with prestige/rank
@@ -82,9 +86,11 @@ constants/
 - **XP**: Combo XP formula (base×length×defense×duration/30), activity rates, championship 2x multiplier
 - **Prestige**: 5 tiers (rookie→pro), 10 rankings per tier, 100 levels per tier
 - **Streaks**: Multipliers from 1.0x (0 days) to 2.0x (100+ days)
-- **Badges**: 88 badges tracked via BadgeStats object
+- **Badges**: 234 total (88 base + 146 post-L100 endgame) tracked via BadgeStats object
 - **Gloves**: 52 unlockable by prestige+level; BMF requires Pro L500 + 365-day streak
 - **Coach**: 12 deterministic recommendation rules from workout history analysis
+- **AI Builder**: Natural language parser converts text prompts to structured workouts
+- **Fight Club**: Social feed, clubs, searchable/filterable preset workouts
 
 ## Ports
 - Frontend (Expo): 8081

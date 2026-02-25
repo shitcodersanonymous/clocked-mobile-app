@@ -3,7 +3,7 @@ import { Tabs } from "expo-router";
 import { NativeTabs, Icon, Label } from "expo-router/unstable-native-tabs";
 import { BlurView } from "expo-blur";
 import { Platform, StyleSheet } from "react-native";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 
 import colors from "@/constants/colors";
@@ -20,17 +20,13 @@ function NativeTabLayout() {
         <Icon sf={{ default: "house", selected: "house.fill" }} />
         <Label>Home</Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="build">
-        <Icon sf={{ default: "hammer", selected: "hammer.fill" }} />
-        <Label>Build</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="history">
-        <Icon sf={{ default: "clock", selected: "clock.fill" }} />
-        <Label>History</Label>
-      </NativeTabs.Trigger>
       <NativeTabs.Trigger name="stats">
         <Icon sf={{ default: "chart.bar", selected: "chart.bar.fill" }} />
-        <Label>Stats</Label>
+        <Label>My Stats</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="fight-club">
+        <Icon sf={{ default: "person.2", selected: "person.2.fill" }} />
+        <Label>Fight Club</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="profile">
         <Icon sf={{ default: "person", selected: "person.fill" }} />
@@ -80,38 +76,31 @@ function ClassicTabLayout() {
         options={{
           title: "Home",
           headerShown: false,
+          tabBarLabel: "HOME",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home" size={size} color={color} />
           ),
         }}
       />
       <Tabs.Screen
-        name="build"
-        options={{
-          title: "Build",
-          headerShown: false,
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="hammer-wrench" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="history"
-        options={{
-          title: "History",
-          headerShown: false,
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="time" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
         name="stats"
         options={{
-          title: "Stats",
+          title: "My Stats",
           headerShown: false,
+          tabBarLabel: "MY STATS",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="stats-chart" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="fight-club"
+        options={{
+          title: "Fight Club",
+          headerShown: false,
+          tabBarLabel: "FIGHT CLUB",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="people" size={size} color={color} />
           ),
         }}
       />
@@ -120,6 +109,7 @@ function ClassicTabLayout() {
         options={{
           title: "Profile",
           headerShown: false,
+          tabBarLabel: "PROFILE",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="person" size={size} color={color} />
           ),

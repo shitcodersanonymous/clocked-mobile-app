@@ -11,15 +11,6 @@ import {
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import Animated, {
-  FadeIn,
-  useAnimatedStyle,
-  withTiming,
-  withSequence,
-  withDelay,
-  useSharedValue,
-  withSpring,
-} from 'react-native-reanimated';
 import colors, { PRESTIGE_COLORS, BADGE_CATEGORY_COLORS_NATIVE } from '@/constants/colors';
 import { useUserStore } from '@/stores/userStore';
 import { useBadgeStore } from '@/stores/badgeStore';
@@ -43,9 +34,10 @@ import {
 import { formatDuration } from '@/lib/utils';
 import { GLOVES, checkGloveUnlocks } from '@/data/gloves';
 import {
-  ALL_BADGES,
-  BADGE_CATEGORIES,
-  BADGE_CATEGORY_NAMES,
+  ALL_BADGES_COMBINED,
+  ALL_BADGE_CATEGORIES,
+  ALL_BADGE_CATEGORY_NAMES,
+  TOTAL_BADGE_COUNT,
   BadgeCategory,
 } from '@/data/badges';
 
@@ -85,14 +77,14 @@ export default function ProfileScreen() {
   const gloveData = GLOVES[equippedGlove] || GLOVES.default;
 
   const badgeSummary = useMemo(() => {
-    return BADGE_CATEGORIES.map(({ category, badges }) => {
+    return ALL_BADGE_CATEGORIES.map(({ category, badges }) => {
       const earned = badges.filter((b) => earnedBadgeIds.includes(b.id)).length;
       return { category, earned, total: badges.length };
     });
   }, [earnedBadgeIds]);
 
   const totalBadgesEarned = earnedBadgeIds.length;
-  const totalBadgesAll = ALL_BADGES.length;
+  const totalBadgesAll = TOTAL_BADGE_COUNT;
 
   const handlePrestige = () => {
     const changes = getPrestigeChanges(prestige);
@@ -279,11 +271,7 @@ function BadgeCategoryRow({
 }) {
   const progress = total > 0 ? earned / total : 0;
   const catColors = BADGE_CATEGORY_COLORS_NATIVE[category] || BADGE_CATEGORY_COLORS_NATIVE.streak;
-  const categoryName = BADGE_CATEGORY_NAMES[category] || category;
-
-  const animatedWidth = useAnimatedStyle(() => ({
-    width: withTiming(`${progress * 100}%` as any, { duration: 600 }),
-  }));
+  const categoryName = ALL_BADGE_CATEGORY_NAMES[category] || category;
 
   return (
     <View style={badgeStyles.row}>
@@ -298,7 +286,7 @@ function BadgeCategoryRow({
           </Text>
         </View>
         <View style={badgeStyles.barBg}>
-          <Animated.View style={[badgeStyles.barFill, { backgroundColor: catColors.text }, animatedWidth]} />
+          <View style={[badgeStyles.barFill, { backgroundColor: catColors.text, width: `${progress * 100}%` }]} />
         </View>
       </View>
     </View>

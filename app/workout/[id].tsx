@@ -1039,8 +1039,8 @@ export default function WorkoutSessionScreen() {
     <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <View style={styles.topBar}>
         <View style={styles.topBarLeft}>
-          <TouchableOpacity style={styles.topBarBtn} onPress={handleExit}>
-            <Ionicons name="close" size={20} color={colors.dark.foreground} />
+          <TouchableOpacity style={styles.topBarBtn} onPress={handleExit} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Ionicons name="close" size={22} color={colors.dark.foreground} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.topBarBtn} onPress={handleCompleteEarly}>
             <Ionicons name="checkmark" size={20} color={accentColor} />

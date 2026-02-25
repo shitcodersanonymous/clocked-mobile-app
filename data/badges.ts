@@ -236,3 +236,31 @@ export function getBadgeProgress(badge: Badge, stats: BadgeStats): number {
   const value = getStatValue(stats, badge.trackingStat);
   return Math.min(1, value / badge.threshold);
 }
+
+import { ALL_POST_L100_BADGES, PostL100Badge, POST_L100_BADGE_CATEGORIES, POST_L100_CATEGORY_NAMES, POST_L100_CATEGORY_COLORS, PostL100Category } from './postL100Badges';
+
+export type AnyBadge = Badge | PostL100Badge;
+export type ExtendedBadgeCategory = BadgeCategory | PostL100Category;
+
+export const ALL_BADGES_COMBINED: AnyBadge[] = [...ALL_BADGES, ...ALL_POST_L100_BADGES];
+export const TOTAL_BADGE_COUNT = ALL_BADGES_COMBINED.length;
+
+export const ALL_BADGE_CATEGORIES = [
+  ...BADGE_CATEGORIES,
+  ...POST_L100_BADGE_CATEGORIES.map(c => ({
+    category: c.category as string,
+    badges: c.badges as AnyBadge[],
+  })),
+];
+
+export const ALL_BADGE_CATEGORY_NAMES: Record<string, string> = {
+  ...BADGE_CATEGORY_NAMES,
+  ...POST_L100_CATEGORY_NAMES,
+};
+
+export function getBadgeByIdCombined(badgeId: string): AnyBadge | undefined {
+  return ALL_BADGES_COMBINED.find(b => b.id === badgeId);
+}
+
+export { ALL_POST_L100_BADGES, POST_L100_BADGE_CATEGORIES, POST_L100_CATEGORY_NAMES, POST_L100_CATEGORY_COLORS };
+export type { PostL100Badge, PostL100Category };

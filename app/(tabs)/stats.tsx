@@ -30,10 +30,11 @@ import {
   PRESTIGE_ORDER,
 } from '@/lib/xpSystem';
 import {
-  ALL_BADGES,
-  BADGE_CATEGORIES,
-  BADGE_CATEGORY_NAMES,
-  getBadgeById,
+  ALL_BADGES_COMBINED,
+  ALL_BADGE_CATEGORIES,
+  ALL_BADGE_CATEGORY_NAMES,
+  TOTAL_BADGE_COUNT,
+  getBadgeByIdCombined,
 } from '@/data/badges';
 import { GLOVES, checkGloveUnlocks } from '@/data/gloves';
 import { formatRelativeDate } from '@/lib/utils';
@@ -73,7 +74,81 @@ export default function StatsScreen() {
   }, [completedWorkouts]);
 
   const totalRounds = useMemo(() => {
-    return completedWorkouts.length * 6;
+    return completedWorkouts.reduce((sum, w) => {
+      if (w.roundFeedback && w.roundFeedback.length > 0) {
+        return sum + w.roundFeedback.length;
+      }
+      return sum + Math.max(1, Math.round((w.duration || 0) / 180));
+    }, 0);
+  }, [completedWorkouts]);
+
+  const caloriesEst = useMemo(() => {
+    return Math.round(
+      completedWorkouts.reduce((sum, w) => sum + ((w.duration || 0) / 60) * 10, 0)
+    );
+  }, [completedWorkouts]);
+
+  const avgIntensity = useMemo(() => {
+    const difficultyMap: Record<string, number> = {
+      too_easy: 2,
+      just_right: 3,
+      too_hard: 5,
+    };
+    const rated = completedWorkouts.filter((w) => w.difficulty);
+    if (rated.length === 0) return 0;
+    const total = rated.reduce(
+      (sum, w) => sum + (difficultyMap[w.difficulty!] || 3),
+      0
+    );
+    return Math.round((total / rated.length) * 10) / 10;
+  }, [completedWorkouts]);
+
+  const weeklyChanges = useMemo(() => {
+    const now = new Date();
+    const startOfThisWeek = new Date(now);
+    startOfThisWeek.setDate(now.getDate() - now.getDay());
+    startOfThisWeek.setHours(0, 0, 0, 0);
+    const startOfLastWeek = new Date(startOfThisWeek);
+    startOfLastWeek.setDate(startOfLastWeek.getDate() - 7);
+
+    const thisWeek = completedWorkouts.filter(
+      (w) => new Date(w.completedAt) >= startOfThisWeek
+    );
+    const lastWeek = completedWorkouts.filter((w) => {
+      const d = new Date(w.completedAt);
+      return d >= startOfLastWeek && d < startOfThisWeek;
+    });
+
+    const calcRounds = (workouts: typeof completedWorkouts) =>
+      workouts.reduce((sum, w) => {
+        if (w.roundFeedback && w.roundFeedback.length > 0) return sum + w.roundFeedback.length;
+        return sum + Math.max(1, Math.round((w.duration || 0) / 180));
+      }, 0);
+
+    const calcHours = (workouts: typeof completedWorkouts) =>
+      workouts.reduce((sum, w) => sum + (w.duration || 0), 0) / 3600;
+
+    const calcCalories = (workouts: typeof completedWorkouts) =>
+      workouts.reduce((sum, w) => sum + ((w.duration || 0) / 60) * 10, 0);
+
+    const difficultyMap: Record<string, number> = { too_easy: 2, just_right: 3, too_hard: 5 };
+    const calcIntensity = (workouts: typeof completedWorkouts) => {
+      const rated = workouts.filter((w) => w.difficulty);
+      if (rated.length === 0) return 0;
+      return rated.reduce((sum, w) => sum + (difficultyMap[w.difficulty!] || 3), 0) / rated.length;
+    };
+
+    const pct = (curr: number, prev: number) => {
+      if (prev === 0) return curr > 0 ? 100 : 0;
+      return Math.round(((curr - prev) / prev) * 100);
+    };
+
+    return {
+      hours: pct(calcHours(thisWeek), calcHours(lastWeek)),
+      rounds: pct(calcRounds(thisWeek), calcRounds(lastWeek)),
+      calories: pct(calcCalories(thisWeek), calcCalories(lastWeek)),
+      intensity: pct(calcIntensity(thisWeek), calcIntensity(lastWeek)),
+    };
   }, [completedWorkouts]);
 
   const workoutDatesThisMonth = useMemo(() => {
@@ -105,7 +180,7 @@ export default function StatsScreen() {
   }, []);
 
   const badgeSummary = useMemo(() => {
-    return BADGE_CATEGORIES.map(({ category, badges }) => {
+    return ALL_BADGE_CATEGORIES.map(({ category, badges }) => {
       const earned = badges.filter((b) =>
         earnedBadgeIds.includes(b.id)
       ).length;
@@ -210,7 +285,7 @@ export default function StatsScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Badges</Text>
         <Text style={styles.sectionBadgeCount}>
-          {earnedBadgeIds.length} / {ALL_BADGES.length}
+          {earnedBadgeIds.length} / {TOTAL_BADGE_COUNT}
         </Text>
       </View>
       <View style={styles.badgeGrid}>
@@ -228,7 +303,7 @@ export default function StatsScreen() {
                 {earned}
               </Text>
               <Text style={styles.badgeCatLabel}>
-                {BADGE_CATEGORY_NAMES[category as keyof typeof BADGE_CATEGORY_NAMES]}
+                {ALL_BADGE_CATEGORY_NAMES[category] || category}
               </Text>
               <View style={styles.badgeCatBarBg}>
                 <View
@@ -272,18 +347,66 @@ export default function StatsScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Training</Text>
       </View>
-      <View style={styles.statGrid2}>
-        <View style={styles.statCardMini}>
-          <Ionicons name="time" size={20} color={colors.dark.blue} />
-          <Text style={styles.statCardValue}>{totalTrainingHours}h</Text>
-          <Text style={styles.statCardLabel}>Training Hours</Text>
+      <View style={styles.trainingGrid}>
+        <View style={styles.trainingCard}>
+          <View style={styles.trainingCardHeader}>
+            <View style={[styles.trainingIconBg, { backgroundColor: 'rgba(59, 130, 246, 0.15)' }]}>
+              <Ionicons name="time" size={18} color="#3B82F6" />
+            </View>
+            {weeklyChanges.hours !== 0 && (
+              <View style={[styles.weeklyBadge, weeklyChanges.hours > 0 ? styles.weeklyBadgeUp : styles.weeklyBadgeDown]}>
+                <Ionicons name={weeklyChanges.hours > 0 ? 'arrow-up' : 'arrow-down'} size={10} color={weeklyChanges.hours > 0 ? '#22C55E' : '#EF4444'} />
+                <Text style={[styles.weeklyText, { color: weeklyChanges.hours > 0 ? '#22C55E' : '#EF4444' }]}>{Math.abs(weeklyChanges.hours)}%</Text>
+              </View>
+            )}
+          </View>
+          <Text style={styles.trainingCardValue}>{totalTrainingHours}h</Text>
+          <Text style={styles.trainingCardLabel}>Training Hours</Text>
         </View>
-        <View style={styles.statCardMini}>
-          <Ionicons name="fitness" size={20} color={colors.dark.purple} />
-          <Text style={styles.statCardValue}>
-            {totalRounds.toLocaleString()}
-          </Text>
-          <Text style={styles.statCardLabel}>Total Rounds</Text>
+        <View style={styles.trainingCard}>
+          <View style={styles.trainingCardHeader}>
+            <View style={[styles.trainingIconBg, { backgroundColor: 'rgba(34, 197, 94, 0.15)' }]}>
+              <Ionicons name="disc" size={18} color="#22C55E" />
+            </View>
+            {weeklyChanges.rounds !== 0 && (
+              <View style={[styles.weeklyBadge, weeklyChanges.rounds > 0 ? styles.weeklyBadgeUp : styles.weeklyBadgeDown]}>
+                <Ionicons name={weeklyChanges.rounds > 0 ? 'arrow-up' : 'arrow-down'} size={10} color={weeklyChanges.rounds > 0 ? '#22C55E' : '#EF4444'} />
+                <Text style={[styles.weeklyText, { color: weeklyChanges.rounds > 0 ? '#22C55E' : '#EF4444' }]}>{Math.abs(weeklyChanges.rounds)}%</Text>
+              </View>
+            )}
+          </View>
+          <Text style={styles.trainingCardValue}>{totalRounds.toLocaleString()}</Text>
+          <Text style={styles.trainingCardLabel}>Total Rounds</Text>
+        </View>
+        <View style={styles.trainingCard}>
+          <View style={styles.trainingCardHeader}>
+            <View style={[styles.trainingIconBg, { backgroundColor: 'rgba(249, 115, 22, 0.15)' }]}>
+              <Ionicons name="flame" size={18} color="#F97316" />
+            </View>
+            {weeklyChanges.calories !== 0 && (
+              <View style={[styles.weeklyBadge, weeklyChanges.calories > 0 ? styles.weeklyBadgeUp : styles.weeklyBadgeDown]}>
+                <Ionicons name={weeklyChanges.calories > 0 ? 'arrow-up' : 'arrow-down'} size={10} color={weeklyChanges.calories > 0 ? '#22C55E' : '#EF4444'} />
+                <Text style={[styles.weeklyText, { color: weeklyChanges.calories > 0 ? '#22C55E' : '#EF4444' }]}>{Math.abs(weeklyChanges.calories)}%</Text>
+              </View>
+            )}
+          </View>
+          <Text style={styles.trainingCardValue}>{caloriesEst.toLocaleString()}</Text>
+          <Text style={styles.trainingCardLabel}>Calories est.</Text>
+        </View>
+        <View style={styles.trainingCard}>
+          <View style={styles.trainingCardHeader}>
+            <View style={[styles.trainingIconBg, { backgroundColor: 'rgba(168, 85, 247, 0.15)' }]}>
+              <Ionicons name="flash" size={18} color="#A855F7" />
+            </View>
+            {weeklyChanges.intensity !== 0 && (
+              <View style={[styles.weeklyBadge, weeklyChanges.intensity > 0 ? styles.weeklyBadgeUp : styles.weeklyBadgeDown]}>
+                <Ionicons name={weeklyChanges.intensity > 0 ? 'arrow-up' : 'arrow-down'} size={10} color={weeklyChanges.intensity > 0 ? '#22C55E' : '#EF4444'} />
+                <Text style={[styles.weeklyText, { color: weeklyChanges.intensity > 0 ? '#22C55E' : '#EF4444' }]}>{Math.abs(weeklyChanges.intensity)}%</Text>
+              </View>
+            )}
+          </View>
+          <Text style={styles.trainingCardValue}>{avgIntensity > 0 ? `${avgIntensity}/5` : '--'}</Text>
+          <Text style={styles.trainingCardLabel}>Avg Intensity</Text>
         </View>
       </View>
 
@@ -717,6 +840,65 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 8,
     marginBottom: 16,
+  },
+  trainingGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 16,
+  },
+  trainingCard: {
+    width: '48%' as any,
+    flexGrow: 1,
+    backgroundColor: colors.dark.surface1,
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: colors.dark.border,
+    gap: 4,
+  },
+  trainingCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  trainingIconBg: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  trainingCardValue: {
+    fontSize: 22,
+    fontWeight: '800' as const,
+    color: colors.dark.foreground,
+  },
+  trainingCardLabel: {
+    fontSize: 11,
+    color: colors.dark.mutedForeground,
+    fontWeight: '500' as const,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  weeklyBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  weeklyBadgeUp: {
+    backgroundColor: 'rgba(34, 197, 94, 0.12)',
+  },
+  weeklyBadgeDown: {
+    backgroundColor: 'rgba(239, 68, 68, 0.12)',
+  },
+  weeklyText: {
+    fontSize: 10,
+    fontWeight: '700' as const,
   },
   statCardMini: {
     flex: 1,

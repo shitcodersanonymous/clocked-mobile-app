@@ -38,6 +38,11 @@ import {
 } from "@/data/comboPresets";
 import { SPEED_BAG_DRILLS } from "@/data/speedBagDrills";
 import { PresetCategory } from "@/data/presetComboLibrary";
+import {
+  parseWorkoutInput as parseWorkoutInputFn,
+  parsedResultToWorkout as parsedResultToWorkoutFn,
+  evaluatePromptQuality as evaluatePromptQualityFn,
+} from "@/lib/aiWorkoutParser";
 
 const C = colors.dark;
 
@@ -94,8 +99,9 @@ function getMoveStyle(move: string): { bg: string; fg: string } {
 export default function BuildScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const params = useLocalSearchParams<{ edit?: string }>();
+  const params = useLocalSearchParams<{ edit?: string; coachPrompt?: string }>();
   const editId = params.edit;
+  const coachPrompt = params.coachPrompt;
 
   const { workouts, addWorkout, updateWorkout } = useWorkoutStore();
   const user = useUserStore((s) => s.user);
@@ -129,6 +135,44 @@ export default function BuildScreen() {
   const [selectedPresetCategory, setSelectedPresetCategory] = useState<string | null>(null);
   const [exerciseInput, setExerciseInput] = useState("");
   const [showExercisePicker, setShowExercisePicker] = useState(false);
+
+  const [buildMode, setBuildMode] = useState<"custom" | "ai">(coachPrompt ? "ai" : "custom");
+  const [aiPrompt, setAiPrompt] = useState(coachPrompt ? decodeURIComponent(coachPrompt) : "");
+  const [aiGenerating, setAiGenerating] = useState(false);
+
+  useEffect(() => {
+    if (coachPrompt) {
+      setBuildMode("ai");
+      setAiPrompt(decodeURIComponent(coachPrompt));
+    }
+  }, [coachPrompt]);
+
+  const handleAiGenerate = () => {
+    if (!aiPrompt.trim()) return;
+    setAiGenerating(true);
+    try {
+      const userLevel = user?.experienceLevel || user?.prestige || "beginner";
+      const parsed = parseWorkoutInputFn(aiPrompt.trim(), userLevel);
+      const workout = parsedResultToWorkoutFn(parsed);
+
+      setName(workout.name);
+      setDifficulty((workout.difficulty || "beginner") as ComboDifficulty);
+      setWarmupPhases(workout.sections.warmup);
+      setGrindPhases(workout.sections.grind);
+      setCooldownPhases(workout.sections.cooldown);
+      setMegasetRepeats(workout.megasetRepeats || 1);
+      setBuildMode("custom");
+    } catch {
+      Alert.alert("Parse Error", "Could not parse that prompt. Try being more specific.");
+    } finally {
+      setAiGenerating(false);
+    }
+  };
+
+  const promptQuality = useMemo(() => {
+    if (!aiPrompt.trim()) return null;
+    return evaluatePromptQualityFn(aiPrompt.trim());
+  }, [aiPrompt]);
 
   useEffect(() => {
     if (editId) {
@@ -355,6 +399,100 @@ export default function BuildScreen() {
         <View style={{ width: 24 }} />
       </View>
 
+      {!editId && (
+        <View style={styles.buildModeToggle}>
+          <TouchableOpacity
+            onPress={() => setBuildMode("custom")}
+            style={[styles.buildModeBtn, buildMode === "custom" && styles.buildModeBtnActive]}
+          >
+            <Feather name="sliders" size={14} color={buildMode === "custom" ? C.background : C.mutedForeground} />
+            <Text style={[styles.buildModeBtnText, buildMode === "custom" && styles.buildModeBtnTextActive]}>
+              Custom Build
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => setBuildMode("ai")}
+            style={[styles.buildModeBtn, buildMode === "ai" && styles.buildModeBtnActive]}
+          >
+            <Ionicons name="sparkles" size={14} color={buildMode === "ai" ? C.background : C.mutedForeground} />
+            <Text style={[styles.buildModeBtnText, buildMode === "ai" && styles.buildModeBtnTextActive]}>
+              AI Builder
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {buildMode === "ai" && !editId ? (
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={{ paddingBottom: 120 }}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.aiSection}>
+            <Text style={styles.aiSectionTitle}>DESCRIBE YOUR WORKOUT</Text>
+            <TextInput
+              value={aiPrompt}
+              onChangeText={setAiPrompt}
+              placeholder="e.g. 5 round heavy bag, 3 min rounds, 1 min rest"
+              placeholderTextColor={C.mutedForeground}
+              style={styles.aiPromptInput}
+              multiline
+              numberOfLines={3}
+              textAlignVertical="top"
+            />
+
+            {promptQuality && !promptQuality.isComplete && (
+              <View style={styles.aiQualityBox}>
+                {promptQuality.suggestions.map((s, i) => (
+                  <View key={i} style={styles.aiQualityRow}>
+                    <Ionicons name="information-circle-outline" size={14} color="#F59E0B" />
+                    <Text style={styles.aiQualityText}>{s}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {promptQuality?.isComplete && (
+              <View style={[styles.aiQualityBox, { borderColor: "#22C55E40" }]}>
+                <View style={styles.aiQualityRow}>
+                  <Ionicons name="checkmark-circle" size={14} color="#22C55E" />
+                  <Text style={[styles.aiQualityText, { color: "#22C55E" }]}>Prompt looks good</Text>
+                </View>
+              </View>
+            )}
+
+            <Text style={styles.aiChipsLabel}>SUGGESTIONS</Text>
+            <View style={styles.aiChipsRow}>
+              {[
+                "5 round heavy bag",
+                "3 round shadowbox beginner",
+                "10 round HIIT circuit",
+                "6 rounds 3 min each 1 min rest",
+                "Speed bag 4 rounds",
+              ].map((chip) => (
+                <TouchableOpacity
+                  key={chip}
+                  onPress={() => setAiPrompt(chip)}
+                  style={styles.aiChip}
+                >
+                  <Text style={styles.aiChipText}>{chip}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <TouchableOpacity
+              onPress={handleAiGenerate}
+              style={[styles.aiGenerateBtn, (!aiPrompt.trim() || aiGenerating) && { opacity: 0.5 }]}
+              disabled={!aiPrompt.trim() || aiGenerating}
+            >
+              <Ionicons name="sparkles" size={18} color={C.background} />
+              <Text style={styles.aiGenerateBtnText}>
+                {aiGenerating ? "Generating..." : "Generate Workout"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      ) : (
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={{ paddingBottom: 120 }}
@@ -465,6 +603,7 @@ export default function BuildScreen() {
 
         <DifficultySelector difficulty={difficulty} onSelect={setDifficulty} />
       </ScrollView>
+      )}
 
       <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, Platform.OS === "web" ? 34 : 16) + 8 }]}>
         <TouchableOpacity
@@ -510,6 +649,7 @@ export default function BuildScreen() {
         addSpeedBagDrill={addSpeedBagDrill}
         exerciseInput={exerciseInput}
         setExerciseInput={setExerciseInput}
+        setShowExercisePicker={setShowExercisePicker}
       />
 
       <ExercisePickerModal
@@ -768,6 +908,7 @@ interface ComboBuilderModalProps {
   addSpeedBagDrill: (drillName: string) => void;
   exerciseInput: string;
   setExerciseInput: (s: string) => void;
+  setShowExercisePicker: (v: boolean) => void;
 }
 
 function ComboBuilderModal(props: ComboBuilderModalProps) {
@@ -779,7 +920,7 @@ function ComboBuilderModal(props: ComboBuilderModalProps) {
     punchKeys, defenseKeys, movementKeys, presetCategories,
     presetSearch, setPresetSearch, selectedPresetCategory, setSelectedPresetCategory,
     editingPhaseId, getPhaseCombos, addPresetCombo, removePresetCombo,
-    addSpeedBagDrill, exerciseInput, setExerciseInput,
+    addSpeedBagDrill, exerciseInput, setExerciseInput, setShowExercisePicker,
   } = props;
 
   const existingCombos = editingPhaseId ? getPhaseCombos(editingPhaseId) : [];
@@ -1848,5 +1989,110 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600" as const,
     color: C.volt,
+  },
+  buildModeToggle: {
+    flexDirection: "row",
+    marginHorizontal: 16,
+    marginVertical: 8,
+    backgroundColor: C.surface2,
+    borderRadius: 10,
+    padding: 3,
+  },
+  buildModeBtn: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 10,
+    borderRadius: 8,
+    gap: 6,
+  },
+  buildModeBtnActive: {
+    backgroundColor: C.volt,
+  },
+  buildModeBtnText: {
+    fontSize: 12,
+    fontWeight: "700" as const,
+    color: C.mutedForeground,
+    letterSpacing: 0.5,
+  },
+  buildModeBtnTextActive: {
+    color: C.background,
+  },
+  aiSection: {
+    padding: 16,
+    gap: 16,
+  },
+  aiSectionTitle: {
+    fontSize: 11,
+    fontWeight: "600" as const,
+    color: C.mutedForeground,
+    letterSpacing: 1,
+  },
+  aiPromptInput: {
+    backgroundColor: C.surface1,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: C.surface3,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: C.foreground,
+    minHeight: 80,
+  },
+  aiQualityBox: {
+    borderWidth: 1,
+    borderColor: "rgba(245,158,11,0.3)",
+    borderRadius: 10,
+    padding: 10,
+    gap: 6,
+  },
+  aiQualityRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  aiQualityText: {
+    fontSize: 12,
+    color: "#F59E0B",
+    flex: 1,
+  },
+  aiChipsLabel: {
+    fontSize: 11,
+    fontWeight: "600" as const,
+    color: C.mutedForeground,
+    letterSpacing: 1,
+  },
+  aiChipsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  aiChip: {
+    backgroundColor: C.surface1,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: C.surface3,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  aiChipText: {
+    fontSize: 12,
+    color: C.foreground,
+  },
+  aiGenerateBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: C.volt,
+    borderRadius: 12,
+    paddingVertical: 16,
+    marginTop: 8,
+  },
+  aiGenerateBtnText: {
+    fontSize: 16,
+    fontWeight: "700" as const,
+    color: C.background,
   },
 });
