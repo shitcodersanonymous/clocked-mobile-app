@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Badge, BADGE_CATEGORY_COLORS } from '@/data/badges';
+import { AnyBadge } from '@/data/badges';
+import { BADGE_CATEGORY_COLORS_NATIVE } from '@/constants/colors';
 
 interface BadgeEarnOverlayProps {
-  badge: Badge;
+  badge: AnyBadge;
   onComplete: () => void;
 }
 
@@ -27,7 +28,7 @@ export function BadgeEarnOverlay({ badge, onComplete }: BadgeEarnOverlayProps) {
   const [phase, setPhase] = useState<'enter' | 'hold' | 'exit'>('enter');
   const scale = React.useRef(new Animated.Value(0.5)).current;
   const opacity = React.useRef(new Animated.Value(0)).current;
-  const categoryColor = BADGE_CATEGORY_COLORS[badge.category] || '#CCFF00';
+  const categoryColor = BADGE_CATEGORY_COLORS_NATIVE[badge.category]?.text ?? '#CCFF00';
 
   useEffect(() => {
     Animated.parallel([

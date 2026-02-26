@@ -40,7 +40,7 @@ import {
   ALL_BADGE_CATEGORIES,
   ALL_BADGE_CATEGORY_NAMES,
   TOTAL_BADGE_COUNT,
-  BadgeCategory,
+  ExtendedBadgeCategory,
 } from '@/data/badges';
 
 export default function ProfileScreen() {
@@ -297,7 +297,7 @@ function BadgeCategoryRow({
   earned,
   total,
 }: {
-  category: BadgeCategory;
+  category: ExtendedBadgeCategory;
   earned: number;
   total: number;
 }) {

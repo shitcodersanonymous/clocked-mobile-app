@@ -74,6 +74,19 @@ export const BADGE_CATEGORY_COLORS_NATIVE: Record<string, { bg: string; text: st
   conditioning: { bg: 'rgba(239, 68, 68, 0.2)', text: colors.dark.badgeConditioning },
   in_workout: { bg: 'rgba(234, 179, 8, 0.2)', text: colors.dark.badgeInWorkout },
   prestige: { bg: 'rgba(245, 158, 11, 0.2)', text: colors.dark.badgePrestige },
+  mastery:            { bg: 'rgba(139, 92, 246, 0.2)', text: '#A78BFA' },
+  overflow:           { bg: 'rgba(6, 182, 212, 0.2)',  text: '#22D3EE' },
+  legacy:             { bg: 'rgba(203, 213, 225, 0.2)',text: '#E2E8F0' },
+  ultra_combo:        { bg: 'rgba(59, 130, 246, 0.2)', text: '#93C5FD' },
+  ultra_conditioning: { bg: 'rgba(244, 63, 94, 0.2)',  text: '#FB7185' },
+  ultra_time:         { bg: 'rgba(99, 102, 241, 0.2)', text: '#A5B4FC' },
+  ultra_volume:       { bg: 'rgba(16, 185, 129, 0.2)', text: '#6EE7B7' },
+  ultra_cardio:       { bg: 'rgba(20, 184, 166, 0.2)', text: '#5EEAD4' },
+  consistency:        { bg: 'rgba(132, 204, 22, 0.2)', text: '#BEF264' },
+  milestones:         { bg: 'rgba(217, 70, 239, 0.2)', text: '#E879F9' },
+  performance:        { bg: 'rgba(14, 165, 233, 0.2)', text: '#38BDF8' },
+  ultra_streak:       { bg: 'rgba(234, 88, 12, 0.2)',  text: '#FB923C' },
+  combat_mastery:     { bg: 'rgba(220, 38, 38, 0.2)',  text: '#FCA5A5' },
 };
 
 export const DIFFICULTY_COLORS: Record<string, string> = {

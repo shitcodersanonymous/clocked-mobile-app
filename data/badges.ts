@@ -245,10 +245,10 @@ export type ExtendedBadgeCategory = BadgeCategory | PostL100Category;
 export const ALL_BADGES_COMBINED: AnyBadge[] = [...ALL_BADGES, ...ALL_POST_L100_BADGES];
 export const TOTAL_BADGE_COUNT = ALL_BADGES_COMBINED.length;
 
-export const ALL_BADGE_CATEGORIES = [
+export const ALL_BADGE_CATEGORIES: { category: ExtendedBadgeCategory; badges: AnyBadge[] }[] = [
   ...BADGE_CATEGORIES,
   ...POST_L100_BADGE_CATEGORIES.map(c => ({
-    category: c.category as string,
+    category: c.category as ExtendedBadgeCategory,
     badges: c.badges as AnyBadge[],
   })),
 ];
