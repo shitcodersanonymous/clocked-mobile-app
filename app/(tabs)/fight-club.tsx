@@ -13,41 +13,19 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import colors from "@/constants/colors";
-import { DIFFICULTY_COLORS } from "@/constants/colors";
+import colors, { PRESTIGE_COLORS } from "@/constants/colors";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 import { useWorkoutStore } from "@/stores/workoutStore";
 import { formatRelativeDate } from "@/lib/utils";
-import {
-  COMPLETE_BEGINNER_PRESET_WORKOUTS,
-  BEGINNER_PRESET_WORKOUTS,
-  INTERMEDIATE_PRESET_WORKOUTS,
-  ADVANCED_PRESET_WORKOUTS,
-  PRO_PRESET_WORKOUTS,
-} from "@/data/presetWorkouts";
-import { Workout } from "@/lib/types";
+import { useTierPresets, TierPresetWorkout } from "@/hooks/useTierPresets";
+import { Prestige } from "@/lib/xpSystem";
 
 const C = colors.dark;
 
 type SubTab = "feed" | "clubs" | "presets";
 type FeedFilter = "all" | "following";
 
-const FILTER_PILLS = [
-  "All",
-  "Boxing",
-  "HIIT",
-  "Conditioning",
-  "Rookie",
-  "Beginner",
-  "Intermediate",
-  "Advanced",
-  "Pro",
-];
-
-function getDiffLabel(d: string) {
-  return (d || "").charAt(0).toUpperCase() + (d || "").slice(1);
-}
 
 export default function FightClubScreen() {
   const insets = useSafeAreaInsets();
@@ -61,38 +39,27 @@ export default function FightClubScreen() {
   const user = useUserStore((s) => s.user);
   const addWorkout = useWorkoutStore((s) => s.addWorkout);
 
-  const allPresets = useMemo(() => {
-    const all = [
-      ...PRO_PRESET_WORKOUTS,
-      ...ADVANCED_PRESET_WORKOUTS,
-      ...INTERMEDIATE_PRESET_WORKOUTS,
-      ...BEGINNER_PRESET_WORKOUTS,
-      ...COMPLETE_BEGINNER_PRESET_WORKOUTS,
-    ];
-    return all;
-  }, []);
+  const { presets: tierPresets, userTier } = useTierPresets();
 
   const filteredPresets = useMemo(() => {
-    let filtered = allPresets;
+    let filtered = tierPresets;
     if (presetFilter !== "All") {
       const lower = presetFilter.toLowerCase();
-      filtered = filtered.filter((w) => {
-        const diff = (w.difficulty || "").toLowerCase();
-        const tags = (w.tags || []).map((t) => t.toLowerCase());
-        return diff === lower || tags.includes(lower);
-      });
+      filtered = filtered.filter((w) =>
+        w.sourceTier === lower || w.tierLabel.toLowerCase() === lower
+      );
     }
     if (searchText.trim()) {
       const q = searchText.toLowerCase();
       filtered = filtered.filter(
         (w) =>
           w.name.toLowerCase().includes(q) ||
-          (w.difficulty || "").toLowerCase().includes(q) ||
-          (w.tags || []).some((t) => t.toLowerCase().includes(q))
+          w.tierLabel.toLowerCase().includes(q) ||
+          w.tierDescription.toLowerCase().includes(q)
       );
     }
     return filtered;
-  }, [allPresets, presetFilter, searchText]);
+  }, [tierPresets, presetFilter, searchText]);
 
   const feedPosts = useMemo(() => {
     return completedWorkouts.slice(0, 20).map((w) => ({
@@ -105,17 +72,21 @@ export default function FightClubScreen() {
     }));
   }, [completedWorkouts, user]);
 
-  const handleSavePreset = (preset: Workout) => {
+  const handleSavePreset = (preset: TierPresetWorkout) => {
     Alert.alert(
-      "Save Workout",
-      `Add "${preset.name}" to your workout library?`,
+      "Save Loadout",
+      `Add the "${preset.tierLabel} Loadout" to your workout library?`,
       [
         { text: "Cancel", style: "cancel" },
         {
           text: "Save",
           onPress: () => {
-            addWorkout({ ...preset, id: `saved-${Date.now()}` });
-            Alert.alert("Saved!", `${preset.name} has been added to your sets.`);
+            addWorkout({
+              ...preset,
+              id: `saved-${Date.now()}`,
+              tags: [...(preset.tags || []), "downloaded"],
+            });
+            Alert.alert("Saved!", `${preset.name} added to your sets.`);
           },
         },
       ]
@@ -172,6 +143,7 @@ export default function FightClubScreen() {
       {activeTab === "presets" && (
         <PresetsTab
           presets={filteredPresets}
+          userTier={userTier}
           filter={presetFilter}
           setFilter={setPresetFilter}
           searchText={searchText}
@@ -303,20 +275,24 @@ function ClubsTab() {
   );
 }
 
+const TIER_FILTER_PILLS = ["All", "Rookie", "Beginner", "Intermediate", "Advanced", "Pro"];
+
 function PresetsTab({
   presets,
+  userTier,
   filter,
   setFilter,
   searchText,
   setSearchText,
   onSave,
 }: {
-  presets: Workout[];
+  presets: TierPresetWorkout[];
+  userTier: Prestige;
   filter: string;
   setFilter: (f: string) => void;
   searchText: string;
   setSearchText: (t: string) => void;
-  onSave: (p: Workout) => void;
+  onSave: (p: TierPresetWorkout) => void;
 }) {
   return (
     <View style={{ flex: 1 }}>
@@ -325,7 +301,7 @@ function PresetsTab({
           <Ionicons name="search" size={16} color={C.mutedForeground} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Search workouts..."
+            placeholder="Search tier loadouts..."
             placeholderTextColor={C.mutedForeground}
             value={searchText}
             onChangeText={setSearchText}
@@ -343,7 +319,7 @@ function PresetsTab({
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.filterPillsRow}
       >
-        {FILTER_PILLS.map((pill) => (
+        {TIER_FILTER_PILLS.map((pill) => (
           <TouchableOpacity
             key={pill}
             style={[styles.filterPill, filter === pill && styles.filterPillActive]}
@@ -366,57 +342,49 @@ function PresetsTab({
         keyExtractor={(item) => item.id}
         contentContainerStyle={{ paddingBottom: 100, paddingHorizontal: 16 }}
         showsVerticalScrollIndicator={false}
+        scrollEnabled={!!presets.length}
         ListHeaderComponent={
-          <Text style={styles.trendingHeader}>
-            TRENDING 🔥
-          </Text>
+          <Text style={styles.trendingHeader}>TIER LOADOUTS</Text>
         }
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Text style={styles.emptyText}>No matching workouts</Text>
+            <Text style={styles.emptyText}>No loadouts for this tier</Text>
           </View>
         }
         renderItem={({ item }) => {
-          const diffColor = DIFFICULTY_COLORS[item.difficulty] || C.mutedForeground;
+          const accentColor = PRESTIGE_COLORS[item.sourceTier] || C.volt;
+          const durationMin = Math.round(item.totalDuration / 60);
           return (
             <TouchableOpacity
-              style={styles.presetCard}
+              style={[styles.presetCard, { borderColor: accentColor + '40' }]}
               activeOpacity={0.7}
               onPress={() => onSave(item)}
             >
-              <View style={styles.presetIconWrap}>
+              <View style={[styles.presetIconWrap, { backgroundColor: accentColor + '20' }]}>
                 <MaterialCommunityIcons
                   name="boxing-glove"
                   size={24}
-                  color={diffColor}
+                  color={accentColor}
                 />
               </View>
               <View style={{ flex: 1, minWidth: 0 }}>
                 <View style={styles.presetNameRow}>
-                  <Text style={styles.presetName} numberOfLines={1}>
-                    {item.name.toUpperCase()}
+                  <Text style={[styles.presetTierBadge, { color: accentColor }]}>
+                    {item.tierLabel.toUpperCase()}
                   </Text>
                   <Ionicons name="chevron-forward" size={16} color={C.mutedForeground} />
                 </View>
-                <Text style={styles.presetAuthor}>@nate</Text>
+                <Text style={styles.presetName} numberOfLines={1}>
+                  {item.name}
+                </Text>
+                <Text style={styles.presetDescription} numberOfLines={2}>
+                  {item.tierDescription}
+                </Text>
                 <View style={styles.presetMetaRow}>
-                  <Text style={styles.presetMetaText}>
-                    ★ 5.0 ({item.timesCompleted || 0})
-                  </Text>
-                  <Text style={styles.presetMetaText}>
-                    ↓{item.timesCompleted || 0}
-                  </Text>
-                  <Text style={styles.presetMetaText}>
-                    {Math.round(item.totalDuration / 60)} min
-                  </Text>
-                  <Text style={[styles.presetDiffBadge, { color: diffColor }]}>
-                    {getDiffLabel(item.difficulty)}
-                  </Text>
-                </View>
-                <View style={styles.presetTagsRow}>
-                  {(item.tags || []).slice(0, 3).map((tag) => (
-                    <View key={tag} style={styles.presetTag}>
-                      <Text style={styles.presetTagText}>{tag}</Text>
+                  <Text style={styles.presetMetaText}>{durationMin} min</Text>
+                  {(item.tags || []).slice(0, 2).map((tag) => (
+                    <View key={tag} style={[styles.presetTag, { borderColor: accentColor + '40' }]}>
+                      <Text style={[styles.presetTagText, { color: accentColor }]}>{tag}</Text>
                     </View>
                   ))}
                 </View>
@@ -701,17 +669,25 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
+  presetTierBadge: {
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 1.5,
+    marginBottom: 2,
+  },
   presetName: {
     fontSize: 14,
     fontWeight: "700",
     color: C.foreground,
     flex: 1,
     marginRight: 8,
+    marginBottom: 2,
   },
-  presetAuthor: {
+  presetDescription: {
     fontSize: 11,
     color: C.mutedForeground,
-    marginTop: 2,
+    lineHeight: 15,
+    marginBottom: 6,
   },
   presetMetaRow: {
     flexDirection: "row",

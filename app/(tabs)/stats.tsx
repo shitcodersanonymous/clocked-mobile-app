@@ -8,6 +8,7 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import RoadToBMF from '@/components/ui/RoadToBMF';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import colors, { PRESTIGE_COLORS, BADGE_CATEGORY_COLORS_NATIVE } from '@/constants/colors';
@@ -38,6 +39,7 @@ import {
 } from '@/data/badges';
 import { GLOVES, checkGloveUnlocks } from '@/data/gloves';
 import { formatRelativeDate } from '@/lib/utils';
+import { executePrestige } from '@/lib/prestigeActions';
 
 export default function StatsScreen() {
   const insets = useSafeAreaInsets();
@@ -204,14 +206,7 @@ export default function StatsScreen() {
   }, [currentStreak]);
 
   const handlePrestige = () => {
-    const next = getNextPrestige(prestige);
-    if (!next) return;
-    updateUser({
-      prestige: next,
-      currentLevel: 1,
-      totalXP: 0,
-      experienceLevel: next as any,
-    });
+    executePrestige(prestige);
   };
 
   const topInset = Platform.OS === 'web' ? 67 : insets.top;
@@ -560,11 +555,10 @@ export default function StatsScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Road to BMF</Text>
       </View>
-      <RoadToBMFCard
+      <RoadToBMF
+        workoutsCompleted={workoutsCompleted}
         prestige={prestige}
         level={currentLevel}
-        totalSessions={workoutsCompleted}
-        longestStreak={longestStreak}
       />
 
       <View style={styles.section}>
@@ -616,78 +610,6 @@ export default function StatsScreen() {
         })}
       </View>
     </ScrollView>
-  );
-}
-
-function RoadToBMFCard({
-  prestige,
-  level,
-  totalSessions,
-  longestStreak,
-}: {
-  prestige: Prestige;
-  level: number;
-  totalSessions: number;
-  longestStreak: number;
-}) {
-  const prestigeIdx = PRESTIGE_ORDER.indexOf(prestige);
-  const maxPrestigeIdx = PRESTIGE_ORDER.length - 1;
-  const prestigeProgress = Math.min(1, (prestigeIdx + (level / 100)) / (maxPrestigeIdx + 1));
-  const sessionsTarget = 250;
-  const sessionsProgress = Math.min(1, totalSessions / sessionsTarget);
-  const streakTarget = 365;
-  const streakProgress = Math.min(1, longestStreak / streakTarget);
-  const overall = (prestigeProgress + sessionsProgress + streakProgress) / 3;
-
-  const milestones = [
-    {
-      label: 'Prestige',
-      value: `${PRESTIGE_NAMES[prestige]} Lvl ${level}`,
-      progress: prestigeProgress,
-    },
-    {
-      label: 'Sessions',
-      value: `${totalSessions}/${sessionsTarget}`,
-      progress: sessionsProgress,
-    },
-    {
-      label: 'Streak',
-      value: `${longestStreak}/${streakTarget} days`,
-      progress: streakProgress,
-    },
-  ];
-
-  return (
-    <View style={styles.card}>
-      <View style={styles.bmfHeader}>
-        <Text style={styles.bmfTitle}>BMF Progress</Text>
-        <Text style={styles.bmfPercent}>{Math.round(overall * 100)}%</Text>
-      </View>
-      <View style={styles.bmfBarBg}>
-        <View
-          style={[
-            styles.bmfBarFill,
-            { width: `${overall * 100}%` as any },
-          ]}
-        />
-      </View>
-      {milestones.map((m) => (
-        <View key={m.label} style={styles.bmfMilestone}>
-          <View style={styles.bmfMilestoneLeft}>
-            <Text style={styles.bmfMilestoneLabel}>{m.label}</Text>
-            <Text style={styles.bmfMilestoneValue}>{m.value}</Text>
-          </View>
-          <View style={styles.bmfMiniBarBg}>
-            <View
-              style={[
-                styles.bmfMiniBarFill,
-                { width: `${m.progress * 100}%` as any },
-              ]}
-            />
-          </View>
-        </View>
-      ))}
-    </View>
   );
 }
 
@@ -1083,65 +1005,5 @@ const styles = StyleSheet.create({
   rankRange: {
     fontSize: 13,
     color: colors.dark.mutedForeground,
-  },
-  bmfHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  bmfTitle: {
-    fontSize: 14,
-    fontWeight: '700' as const,
-    color: colors.dark.foreground,
-  },
-  bmfPercent: {
-    fontSize: 14,
-    fontWeight: '800' as const,
-    color: colors.dark.volt,
-  },
-  bmfBarBg: {
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.dark.surface3,
-    overflow: 'hidden',
-    marginBottom: 14,
-  },
-  bmfBarFill: {
-    height: '100%',
-    borderRadius: 3,
-    backgroundColor: colors.dark.volt,
-  },
-  bmfMilestone: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-    gap: 12,
-  },
-  bmfMilestoneLeft: {
-    flex: 1,
-  },
-  bmfMilestoneLabel: {
-    fontSize: 12,
-    fontWeight: '600' as const,
-    color: colors.dark.foreground,
-  },
-  bmfMilestoneValue: {
-    fontSize: 10,
-    color: colors.dark.mutedForeground,
-    marginTop: 1,
-  },
-  bmfMiniBarBg: {
-    width: 80,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: colors.dark.surface3,
-    overflow: 'hidden',
-  },
-  bmfMiniBarFill: {
-    height: '100%',
-    borderRadius: 2,
-    backgroundColor: colors.dark.volt,
   },
 });

@@ -33,6 +33,7 @@ import {
   getLevelFromXP,
 } from '@/lib/xpSystem';
 import { formatDuration } from '@/lib/utils';
+import { executePrestige } from '@/lib/prestigeActions';
 import { GLOVES, checkGloveUnlocks } from '@/data/gloves';
 import {
   ALL_BADGES_COMBINED,
@@ -101,12 +102,7 @@ export default function ProfileScreen() {
           text: 'Prestige',
           style: 'destructive',
           onPress: () => {
-            updateUser({
-              prestige: changes.nextTier,
-              currentLevel: 1,
-              totalXP: 0,
-              experienceLevel: changes.nextTier as any,
-            });
+            executePrestige(prestige);
             setShowPrestigePrompt(false);
           },
         },

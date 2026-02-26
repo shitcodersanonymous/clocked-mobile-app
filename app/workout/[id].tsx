@@ -1,52 +1,25 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   StyleSheet,
   Text,
   View,
   TouchableOpacity,
   Alert,
-  ScrollView,
-  TextInput,
   Platform,
-  AppState,
-  AppStateStatus,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import * as Speech from 'expo-speech';
 import * as Haptics from 'expo-haptics';
-import Animated, {
-  useAnimatedStyle,
-  useAnimatedProps,
-  withTiming,
-  withSequence,
-  withSpring,
-  useSharedValue,
-  runOnJS,
-  cancelAnimation,
-  Easing,
-  FadeIn,
-  FadeOut,
-} from 'react-native-reanimated';
-import Svg, { Circle } from 'react-native-svg';
+import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
-const ARC_SIZE = 260;
-const ARC_GLOW_STROKE = 10;
-const ARC_STROKE_WIDTH = 5;
-const ARC_R = (ARC_SIZE - ARC_GLOW_STROKE) / 2 - 4;
-const ARC_C = 2 * Math.PI * ARC_R;
-const ARC_FRAC = 0.75;
-const ARC_LEN = ARC_C * ARC_FRAC;
-const ARC_START_OFFSET = -(ARC_C * (135 / 360));
-const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 import colors from '@/constants/colors';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useUserStore } from '@/stores/userStore';
 import { useHistoryStore } from '@/stores/historyStore';
 import { useBadgeStore } from '@/stores/badgeStore';
-import { Workout, WorkoutPhase, WorkoutSegment, RoundFeedback, CompletedWorkout } from '@/lib/types';
-import { formatTime, generateId } from '@/lib/utils';
+import { generateId } from '@/lib/utils';
 import {
   ACTIVITY_XP_RATES,
   XPActivityType,
@@ -56,46 +29,29 @@ import {
   getLevelFromXP,
   Prestige,
   PRESTIGE_NAMES,
-  getRankingFromLevel,
-  RANKING_NAMES,
   getXPWithinCurrentLevel,
   PER_SESSION_ESTIMATES,
   TIER_COMBO_STATS,
   isPrestigeEligible,
   isMaxLevel,
   PRESTIGE_ORDER,
-  calculateSessionXP,
-  getLevelProgress,
 } from '@/lib/xpSystem';
 import { computePostLogStats, computePostL100Increments } from '@/lib/workoutTracking';
-import { checkBadges, sumBadgeXP, BadgeStats, Badge } from '@/data/badges';
-import { XPBar } from '@/components/ui/XPBar';
-import { TimerXPBar } from '@/components/ui/TimerXPBar';
+import { checkBadges, BadgeStats, Badge } from '@/data/badges';
 import { ComboXPPop } from '@/components/ui/ComboXPPop';
 import { BadgeEarnOverlay } from '@/components/ui/BadgeEarnOverlay';
 import { GloveUnlockOverlay } from '@/components/ui/GloveUnlockOverlay';
 import { LevelUpOverlay } from '@/components/ui/LevelUpOverlay';
 import PostWorkoutSummary from '@/components/workout/PostWorkoutSummary';
-import RoundFeedbackPanel from '@/components/workout/RoundFeedbackPanel';
-import VerticalXPBar from '@/components/ui/VerticalXPBar';
+import ArcTimer from '@/components/workout/ArcTimer';
+import ComboDisplay from '@/components/workout/ComboDisplay';
+import WorkoutControls from '@/components/workout/WorkoutControls';
+import { useWorkoutTimer, FlatSegment } from '@/hooks/useWorkoutTimer';
+import { playSoundEffect } from '@/hooks/useSoundEffects';
+import { executePrestige } from '@/lib/prestigeActions';
 import { checkGloveUnlocks, Glove, GLOVES } from '@/data/gloves';
 
-interface FlatSegment {
-  id: string;
-  name: string;
-  type: 'active' | 'rest';
-  segmentType?: string;
-  duration: number;
-  phaseName: string;
-  section: 'warmup' | 'grind' | 'cooldown';
-  combo?: string[];
-  nextCombo?: string[];
-  intensity?: string;
-  reps?: number;
-  repeatIndex?: number;
-  megasetIndex?: number;
-  cumulativeRound?: number;
-}
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface SessionXPBreakdown {
   baseXP: number;
@@ -123,37 +79,7 @@ function formatTimeCompact(seconds: number): string {
   return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 }
 
-function getDisplayMove(move: string): { display: string; type: 'punch' | 'defense' | 'movement' } {
-  const m = move.toUpperCase();
-  if (m === 'JAB' || m === '1') return { display: '1', type: 'punch' };
-  if (m === 'CROSS' || m === 'STRAIGHT' || m === '2') return { display: '2', type: 'punch' };
-  if (m === 'LEAD HOOK' || m === 'LEFT HOOK' || m === '3') return { display: '3', type: 'punch' };
-  if (m === 'REAR HOOK' || m === 'RIGHT HOOK' || m === '4') return { display: '4', type: 'punch' };
-  if (m === 'LEAD UPPERCUT' || m === 'LEFT UPPERCUT' || m === '5') return { display: '5', type: 'punch' };
-  if (m === 'REAR UPPERCUT' || m === 'RIGHT UPPERCUT' || m === '6') return { display: '6', type: 'punch' };
-  if (m === 'LEAD BODY HOOK' || m === 'LEFT BODY' || m === '7') return { display: '7', type: 'punch' };
-  if (m === 'REAR BODY HOOK' || m === 'RIGHT BODY' || m === '8') return { display: '8', type: 'punch' };
-  if (m.includes('SLIP L') || m === 'SL') return { display: 'SL', type: 'defense' };
-  if (m.includes('SLIP R') || m === 'SR') return { display: 'SR', type: 'defense' };
-  if (m.includes('ROLL L') || m === 'RL') return { display: 'RL', type: 'defense' };
-  if (m.includes('ROLL R') || m === 'RR') return { display: 'RR', type: 'defense' };
-  if (m === 'PULL' || m === 'PL') return { display: 'PL', type: 'defense' };
-  if (m === 'BLOCK' || m === 'BK') return { display: 'BK', type: 'defense' };
-  if (m.includes('CIRCLE L')) return { display: '\u21BA', type: 'movement' };
-  if (m.includes('CIRCLE R')) return { display: '\u21BB', type: 'movement' };
-  if (m.includes('STEP IN')) return { display: '\u2192', type: 'movement' };
-  if (m.includes('STEP OUT')) return { display: '\u2190', type: 'movement' };
-  if (['1','2','3','4','5','6','7','8'].includes(m)) return { display: m, type: 'punch' };
-  return { display: move, type: 'punch' };
-}
-
-function getMoveColor(type: 'punch' | 'defense' | 'movement'): string {
-  switch (type) {
-    case 'punch': return colors.dark.volt;
-    case 'defense': return colors.dark.blue;
-    case 'movement': return colors.dark.orange;
-  }
-}
+// ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function WorkoutSessionScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -165,7 +91,6 @@ export default function WorkoutSessionScreen() {
   const user = useUserStore((s) => s.user);
   const addXP = useUserStore((s) => s.addXP);
   const updateUser = useUserStore((s) => s.updateUser);
-  const incrementStreak = useUserStore((s) => s.incrementStreak);
   const addCompletedWorkout = useHistoryStore((s) => s.addCompletedWorkout);
   const completedWorkouts = useHistoryStore((s) => s.completedWorkouts);
   const earnedBadgeIds = useBadgeStore((s) => s.earnedBadgeIds);
@@ -173,244 +98,121 @@ export default function WorkoutSessionScreen() {
   const updateBadgeStats = useBadgeStore((s) => s.updateBadgeStats);
   const badgeStats = useBadgeStore((s) => s.badgeStats);
 
-  const workout = useMemo(() => workouts.find((w) => w.id === id) || null, [workouts, id]);
+  const workout = workouts.find((w) => w.id === id) || null;
 
-  const flatSegments = useMemo(() => {
-    if (!workout) return [];
-    const segments: FlatSegment[] = [];
-    const megasetCount = workout.megasetRepeats || 1;
+  const prestige = (user?.prestige || 'beginner') as Prestige;
+  const streakMultiplier = getStreakMultiplier(user?.currentStreak || 0);
 
-    const sectionOrder: { sectionName: 'warmup' | 'grind' | 'cooldown' }[] = [
-      { sectionName: 'warmup' },
-      ...Array.from({ length: megasetCount }, () => ({ sectionName: 'grind' as const })),
-      { sectionName: 'cooldown' },
-    ];
+  // ── Local state ────────────────────────────────────────────────────────────
 
-    const hasWarmup = workout.sections.warmup.length > 0;
-    const hasCooldown = workout.sections.cooldown.length > 0;
-    const hasGrind = workout.sections.grind.length > 0;
-
-    const tempSegments: {
-      segment: any;
-      sectionName: 'warmup' | 'grind' | 'cooldown';
-      phase: any;
-      repeatIndex: number;
-      megasetIndex?: number;
-    }[] = [];
-
-    let grindIterationIndex = 0;
-    sectionOrder.forEach(({ sectionName }) => {
-      const currentMegasetIndex = sectionName === 'grind' ? grindIterationIndex : undefined;
-      const isFirstGrind = sectionName === 'grind' && grindIterationIndex === 0;
-      if (sectionName === 'grind') grindIterationIndex++;
-      const phases = workout.sections[sectionName];
-      if (phases.length === 0) return;
-
-      if (isFirstGrind && hasWarmup && hasGrind) {
-        tempSegments.push({
-          segment: { id: 'transition-get-ready', name: 'Get Ready', type: 'rest', segmentType: 'rest', duration: 30 },
-          sectionName: 'grind',
-          phase: { id: 'trans-gr', name: 'Get Ready', repeats: 1, segments: [], comboOrder: 'sequential' },
-          repeatIndex: 0,
-          megasetIndex: currentMegasetIndex,
-        });
-      }
-
-      if (sectionName === 'cooldown' && hasGrind && hasCooldown) {
-        tempSegments.push({
-          segment: { id: 'transition-recovery', name: 'Recovery', type: 'rest', segmentType: 'rest', duration: 30 },
-          sectionName: 'cooldown',
-          phase: { id: 'trans-rec', name: 'Recovery', repeats: 1, segments: [], comboOrder: 'sequential' },
-          repeatIndex: 0,
-        });
-      }
-
-      phases.forEach((phase: WorkoutPhase) => {
-        for (let r = 0; r < phase.repeats; r++) {
-          phase.segments.forEach((segment: WorkoutSegment) => {
-            tempSegments.push({ segment, sectionName, phase, repeatIndex: r, megasetIndex: currentMegasetIndex });
-          });
-        }
-      });
-    });
-
-    const comboSegmentIndices: number[] = [];
-    const shadowboxIndices: number[] = [];
-
-    tempSegments.forEach((item, idx) => {
-      const { segment, phase } = item;
-      const isSpeedbag = segment.segmentType === 'speedbag';
-      const isDoubleend = segment.segmentType === 'doubleend';
-      if (isSpeedbag || isDoubleend) return;
-      const isComboSegment = segment.segmentType === 'combo' || segment.comboIndex === 'cycle';
-      const isShadowboxing = segment.segmentType === 'shadowboxing' ||
-        segment.name.toLowerCase().includes('shadow') ||
-        segment.name.toLowerCase().includes('technique');
-
-      const isExplicitExercise = segment.segmentType === 'exercise' ||
-        ['pushups','pushup','push-ups','burpees','burpee','curlups','curlup','curl-ups','sit-ups','situps',
-         'jump rope','jog','jog in place','treadmill','high knees','plank'].some(
-          (ex: string) => segment.name.toLowerCase().includes(ex)
-        );
-
-      const phaseCombos = phase.combos as string[][] | undefined;
-      const phaseHasCombos = phaseCombos && phaseCombos.length > 0;
-      const phaseHasComboSegments = phase.segments?.some((s: any) =>
-        ['combo', 'shadowboxing', 'speedbag', 'doubleend'].includes(s.segmentType || '')
-      );
-      const isExerciseSegment = !isExplicitExercise && (
-        segment.type === 'active' && segment.segmentType === 'work' && phaseHasCombos && !phaseHasComboSegments
-      );
-
-      if (isComboSegment || isExerciseSegment) comboSegmentIndices.push(idx);
-      else if (isShadowboxing) shadowboxIndices.push(idx);
-    });
-
-    const totalCombos = workout.combos?.length || 0;
-    const comboAssignments: Map<number, string[]> = new Map();
-
-    const getComboListForPhase = (phase: any): string[][] => {
-      const phaseCombos = phase.combos as string[][] | undefined;
-      if (phaseCombos && phaseCombos.length > 0) {
-        if (phase.comboOrder === 'random') {
-          const shuffled = [...phaseCombos];
-          for (let i = shuffled.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-          }
-          return shuffled;
-        }
-        return phaseCombos;
-      }
-      if (!workout.combos || workout.combos.length === 0) return [];
-      if (phase.comboOrder === 'random') {
-        const shuffled = [...workout.combos];
-        for (let i = shuffled.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-        }
-        return shuffled;
-      }
-      return workout.combos;
-    };
-
-    const phaseComboLists: Map<string, { list: string[][]; cursor: number }> = new Map();
-
-    const getPhaseCombo = (phase: any, phaseKey: string): string[] | undefined => {
-      if (totalCombos === 0 && !(phase.combos && phase.combos.length > 0)) return undefined;
-      if (!phaseComboLists.has(phaseKey)) {
-        phaseComboLists.set(phaseKey, { list: getComboListForPhase(phase), cursor: 0 });
-      }
-      const entry = phaseComboLists.get(phaseKey)!;
-      if (entry.cursor >= entry.list.length) return undefined;
-      return entry.list[entry.cursor++];
-    };
-
-    const allBoxingIndices = [...comboSegmentIndices, ...shadowboxIndices].sort((a, b) => a - b);
-    const roundComboCache: Map<string, string[]> = new Map();
-
-    for (const idx of allBoxingIndices) {
-      const { phase, repeatIndex } = tempSegments[idx];
-      const roundKey = `${phase.id}-${repeatIndex}`;
-      if (roundComboCache.has(roundKey)) {
-        comboAssignments.set(idx, roundComboCache.get(roundKey)!);
-      } else {
-        const phaseKey = `${phase.id}`;
-        const combo = getPhaseCombo(phase, phaseKey);
-        if (combo) {
-          roundComboCache.set(roundKey, combo);
-          comboAssignments.set(idx, combo);
-        }
-      }
-    }
-
-    let cumulativeRound = 0;
-    let lastPhaseId = '';
-    let lastRepeatIndex = -1;
-
-    tempSegments.forEach((item, idx) => {
-      const { segment, sectionName, phase, repeatIndex, megasetIndex } = item;
-      if (sectionName === 'grind') {
-        const phaseRepeatKey = `${phase.id}-${repeatIndex}`;
-        if (phaseRepeatKey !== `${lastPhaseId}-${lastRepeatIndex}`) {
-          cumulativeRound++;
-          lastPhaseId = phase.id;
-          lastRepeatIndex = repeatIndex;
-        }
-      }
-
-      const combo = comboAssignments.get(idx);
-      const isShadowboxing = segment.segmentType === 'shadowboxing' ||
-        segment.name.toLowerCase().includes('shadow') ||
-        segment.name.toLowerCase().includes('technique');
-      let nextCombo: string[] | undefined;
-      if (isShadowboxing && !combo) {
-        const nextItem = tempSegments[idx + 1];
-        if (nextItem) {
-          const nextAssigned = comboAssignments.get(idx + 1);
-          if (nextAssigned) nextCombo = nextAssigned;
-        }
-      }
-
-      segments.push({
-        id: `${segment.id}-${repeatIndex}-${idx}`,
-        name: segment.name,
-        type: segment.type,
-        segmentType: segment.segmentType,
-        duration: segment.duration,
-        phaseName: phase.name,
-        section: sectionName,
-        combo,
-        nextCombo,
-        intensity: segment.intensity,
-        reps: segment.reps,
-        repeatIndex: phase.repeats > 1 ? repeatIndex + 1 : undefined,
-        megasetIndex,
-        cumulativeRound: sectionName === 'grind' ? cumulativeRound : undefined,
-      });
-    });
-
-    return segments;
-  }, [workout]);
-
-  const [currentSegmentIndex, setCurrentSegmentIndex] = useState(0);
-  const [timeRemaining, setTimeRemaining] = useState(10);
-  const [totalElapsed, setTotalElapsed] = useState(0);
-  const [isRunning, setIsRunning] = useState(false);
-  const [isPaused, setIsPaused] = useState(true);
-  const [isPreparation, setIsPreparation] = useState(true);
-  const [isComplete, setIsComplete] = useState(false);
+  const [hasStartedOnce, setHasStartedOnce] = useState(false);
+  const [accumulatedXP, setAccumulatedXP] = useState(0);
   const [notes, setNotes] = useState('');
   const [logged, setLogged] = useState(false);
   const [difficultyRating, setDifficultyRating] = useState<'too_easy' | 'just_right' | 'too_hard' | null>(null);
-  const [hasStartedOnce, setHasStartedOnce] = useState(false);
-  const [accumulatedXP, setAccumulatedXP] = useState(0);
-  const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [levelUpLevel, setLevelUpLevel] = useState<number | null>(null);
   const [sessionResult, setSessionResult] = useState<SessionXPBreakdown | null>(null);
   const [roundFeedbacks, setRoundFeedbacks] = useState<Record<number, 'easy' | 'perfect' | 'hard'>>({});
 
-  const liveBadgeIdsRef = useRef<Set<string>>(new Set());
   const [liveBadgesEarned, setLiveBadgesEarned] = useState<Array<{ badge: Badge; earnedAt: number }>>([]);
   const [latestBadgePop, setLatestBadgePop] = useState<{ badge: Badge; id: number } | null>(null);
   const [comboXPPop, setComboXPPop] = useState<{ amount: number; id: number; isChampionship?: boolean } | null>(null);
   const [badgeOverlay, setBadgeOverlay] = useState<Badge | null>(null);
   const [gloveUnlockOverlay, setGloveUnlockOverlay] = useState<Glove | null>(null);
-  const badgeOverlayQueue = useRef<Badge[]>([]);
-  const gloveUnlockQueue = useRef<Glove[]>([]);
 
-  const lastTickTimeRef = useRef<number>(Date.now());
+  const liveBadgeIdsRef = useRef<Set<string>>(new Set());
   const prevLevelRef = useRef<number | null>(null);
   const sessionActiveRef = useRef(false);
   const prevSegmentIndexRef = useRef<number>(-1);
-  const xpAwardedRef = useRef(false);
-  const arcProgressSV = useSharedValue(1);
-  const prevArcSegmentRef = useRef(-1);
+  const badgeOverlayQueue = useRef<Badge[]>([]);
+  const gloveUnlockQueue = useRef<Glove[]>([]);
 
-  const currentSegment = flatSegments[currentSegmentIndex];
-  const nextSegment = flatSegments[currentSegmentIndex + 1];
+  // ── XP helpers ─────────────────────────────────────────────────────────────
+
+  const isBoxingSegment = useCallback((segment: FlatSegment) => {
+    const st = segment.segmentType;
+    return st === 'shadowboxing' || st === 'combo' || st === 'doubleend';
+  }, []);
+
+  const getActivityTypeFromSegment = useCallback(
+    (segment: FlatSegment | undefined): XPActivityType => {
+      if (!segment) return 'active';
+      return getActivityTypeFromName(segment.name, segment.type === 'rest' ? 'rest' : segment.segmentType);
+    },
+    []
+  );
+
+  const getXPPerSecond = useCallback(
+    (segment: FlatSegment) => {
+      const activityType = getActivityTypeFromSegment(segment);
+      let xpPerSecond = ACTIVITY_XP_RATES[activityType];
+      if (activityType === 'combo' && segment.combo && segment.combo.length > 0) {
+        xpPerSecond = calculateComboXP(segment.combo, segment.duration) / segment.duration;
+      }
+      if (segment.phaseName.toLowerCase().includes('championship') && isBoxingSegment(segment)) {
+        xpPerSecond *= 2;
+      }
+      return xpPerSecond;
+    },
+    [isBoxingSegment, getActivityTypeFromSegment]
+  );
+
+  // ── Timer hook callbacks ────────────────────────────────────────────────────
+
+  const onXPTick = useCallback(
+    (delta: number, segment: FlatSegment) => {
+      const xpGained = getXPPerSecond(segment) * streakMultiplier * delta;
+      setAccumulatedXP((prev) => prev + xpGained);
+    },
+    [getXPPerSecond, streakMultiplier]
+  );
+
+  const onComboSegmentComplete = useCallback((segment: FlatSegment) => {
+    if (segment.segmentType === 'combo' && segment.combo && segment.combo.length > 0) {
+      const comboXP = calculateComboXP(segment.combo, segment.duration);
+      const isChamp = segment.phaseName.toLowerCase().includes('championship');
+      const finalXP = isChamp ? comboXP * 2 : comboXP;
+      setComboXPPop({ amount: finalXP, id: Date.now(), isChampionship: isChamp });
+      setTimeout(() => setComboXPPop(null), 1500);
+    }
+  }, []);
+
+  const onWorkoutComplete = useCallback(() => {
+    Speech.stop();
+    if (workout) markWorkoutUsed(workout.id);
+  }, [workout, markWorkoutUsed]);
+
+  // ── useWorkoutTimer ─────────────────────────────────────────────────────────
+
+  const timer = useWorkoutTimer({
+    workout,
+    onXPTick,
+    onComboSegmentComplete,
+    onWorkoutComplete,
+  });
+
+  const {
+    flatSegments,
+    timeRemaining,
+    totalElapsed,
+    currentSegmentIndex,
+    currentSegment,
+    nextSegment,
+    isRunning,
+    isPaused,
+    isPreparation,
+    isComplete,
+    arcProgressSV,
+    overallProgress,
+    handleBack,
+    skipSegment,
+    adjustTime,
+  } = timer;
+
+  // ── Derived display values ─────────────────────────────────────────────────
+
   const totalSegments = flatSegments.length;
-  const progressPercent = totalSegments > 0 ? (currentSegmentIndex / totalSegments) * 100 : 0;
+  const progressPercent = overallProgress;
 
   const isChampionship = !isPreparation && !!currentSegment &&
     currentSegment.phaseName.toLowerCase().includes('championship');
@@ -418,48 +220,23 @@ export default function WorkoutSessionScreen() {
     currentSegment?.section === 'cooldown' ||
     currentSegment?.phaseName?.toLowerCase() === 'cooldown'
   );
-
   const accentColor = isChampionship ? colors.dark.yellow : isCooldown ? colors.dark.blue : colors.dark.volt;
 
-  const animatedGlowProps = useAnimatedProps(() => {
-    const filled = ARC_LEN * arcProgressSV.value;
-    return { strokeDasharray: [filled, ARC_C - filled] as unknown as string };
-  });
-  const animatedFillProps = useAnimatedProps(() => {
-    const filled = ARC_LEN * arcProgressSV.value;
-    return { strokeDasharray: [filled, ARC_C - filled] as unknown as string };
-  });
-
-  const prestige = (user?.prestige || 'beginner') as Prestige;
-  const streakMultiplier = getStreakMultiplier(user?.currentStreak || 0);
-
-  const isBoxingSegment = useCallback((segment: FlatSegment) => {
-    const st = segment.segmentType;
-    return st === 'shadowboxing' || st === 'combo' || st === 'doubleend';
-  }, []);
-
-  const getActivityTypeFromSegment = useCallback((segment: FlatSegment | undefined): XPActivityType => {
-    if (!segment) return 'active';
-    return getActivityTypeFromName(segment.name, segment.type === 'rest' ? 'rest' : segment.segmentType);
-  }, []);
-
-  const getXPPerSecond = useCallback((segment: FlatSegment) => {
-    const activityType = getActivityTypeFromSegment(segment);
-    let xpPerSecond = ACTIVITY_XP_RATES[activityType];
-
-    if (activityType === 'combo' && segment.combo && segment.combo.length > 0) {
-      const totalComboXP = calculateComboXP(segment.combo, segment.duration);
-      xpPerSecond = totalComboXP / segment.duration;
-    }
-
-    if (segment.phaseName.toLowerCase().includes('championship') && isBoxingSegment(segment)) {
-      xpPerSecond *= 2;
-    }
-
-    return xpPerSecond;
-  }, [isBoxingSegment, getActivityTypeFromSegment]);
-
   const liveLevel = getLevelFromXP(prestige, (user?.totalXP || 0) + accumulatedXP);
+
+  const isShadowboxing = currentSegment?.segmentType === 'shadowboxing' ||
+    currentSegment?.name.toLowerCase().includes('shadow') ||
+    currentSegment?.name.toLowerCase().includes('technique');
+  const isSpeedbag = currentSegment?.segmentType === 'speedbag';
+  const isDoubleend = currentSegment?.segmentType === 'doubleend';
+  const rawCombo = (isSpeedbag || isDoubleend)
+    ? undefined
+    : (isShadowboxing ? (currentSegment?.combo || currentSegment?.nextCombo) : currentSegment?.combo);
+  const isFreestyleCombo = rawCombo?.length === 1 && rawCombo[0] === 'FREESTYLE';
+  const displayCombo = isFreestyleCombo ? undefined : rawCombo;
+  const isRestSegment = currentSegment?.type === 'rest' && !isPreparation;
+
+  // ── Level-up effect (fires sound + overlay) ────────────────────────────────
 
   useEffect(() => {
     if (prevLevelRef.current === null) {
@@ -468,9 +245,12 @@ export default function WorkoutSessionScreen() {
     }
     if (sessionActiveRef.current && accumulatedXP > 0 && liveLevel > prevLevelRef.current) {
       setLevelUpLevel(liveLevel);
+      playSoundEffect.levelUp();
     }
     prevLevelRef.current = liveLevel;
   }, [liveLevel, accumulatedXP]);
+
+  // ── Live badge check (every 5s while active) ───────────────────────────────
 
   useEffect(() => {
     if (isComplete || !isRunning || isPaused || !user) return;
@@ -487,13 +267,9 @@ export default function WorkoutSessionScreen() {
       const yesterdayStr = yesterday.toISOString().split('T')[0];
       const lastDate = user.lastWorkoutDate;
       let newStreak: number;
-      if (lastDate === todayStr) {
-        newStreak = user.currentStreak || 1;
-      } else if (lastDate === yesterdayStr) {
-        newStreak = (user.currentStreak || 0) + 1;
-      } else {
-        newStreak = 1;
-      }
+      if (lastDate === todayStr) newStreak = user.currentStreak || 1;
+      else if (lastDate === yesterdayStr) newStreak = (user.currentStreak || 0) + 1;
+      else newStreak = 1;
 
       const liveStats: BadgeStats = {
         consecutiveDays: newStreak,
@@ -513,23 +289,22 @@ export default function WorkoutSessionScreen() {
       const alreadyEarned = [...earnedBadgeIds, ...Array.from(liveBadgeIdsRef.current)];
       const newBadges = checkBadges(liveStats, alreadyEarned);
 
-      if (newBadges.length > 0) {
-        for (const badge of newBadges) {
-          if (!liveBadgeIdsRef.current.has(badge.id)) {
-            liveBadgeIdsRef.current.add(badge.id);
-            setLiveBadgesEarned(prev => [...prev, { badge, earnedAt: Date.now() }]);
-            setAccumulatedXP(prev => prev + badge.xpReward);
-
-            const popId = Date.now();
-            setLatestBadgePop({ badge, id: popId });
-            setTimeout(() => setLatestBadgePop(prev => prev?.id === popId ? null : prev), 3000);
-          }
+      for (const badge of newBadges) {
+        if (!liveBadgeIdsRef.current.has(badge.id)) {
+          liveBadgeIdsRef.current.add(badge.id);
+          setLiveBadgesEarned((prev) => [...prev, { badge, earnedAt: Date.now() }]);
+          setAccumulatedXP((prev) => prev + badge.xpReward);
+          const popId = Date.now();
+          setLatestBadgePop({ badge, id: popId });
+          setTimeout(() => setLatestBadgePop((prev) => (prev?.id === popId ? null : prev)), 3000);
         }
       }
     }, 5000);
 
     return () => clearInterval(interval);
   }, [isComplete, isRunning, isPaused, user, totalElapsed, earnedBadgeIds, prestige, badgeStats]);
+
+  // ── Session result computation (when complete) ─────────────────────────────
 
   useEffect(() => {
     if (!isComplete || sessionResult || !user) return;
@@ -550,14 +325,9 @@ export default function WorkoutSessionScreen() {
     const lastDate = user.lastWorkoutDate;
     let newStreak: number;
     let streakBroken = false;
-    if (lastDate === todayStr) {
-      newStreak = user.currentStreak || 1;
-    } else if (lastDate === yesterdayStr) {
-      newStreak = (user.currentStreak || 0) + 1;
-    } else {
-      newStreak = 1;
-      streakBroken = (user.currentStreak || 0) > 1;
-    }
+    if (lastDate === todayStr) newStreak = user.currentStreak || 1;
+    else if (lastDate === yesterdayStr) newStreak = (user.currentStreak || 0) + 1;
+    else { newStreak = 1; streakBroken = (user.currentStreak || 0) > 1; }
 
     const tier = prestige;
     const tierStats = TIER_COMBO_STATS[tier];
@@ -578,8 +348,7 @@ export default function WorkoutSessionScreen() {
 
     const liveEarnedIds = Array.from(liveBadgeIdsRef.current);
     const newCoreBadges = checkBadges(updatedStats, [...earnedBadgeIds, ...liveEarnedIds]);
-
-    const liveBadges = liveBadgesEarned.map(lb => lb.badge);
+    const liveBadges = liveBadgesEarned.map((lb) => lb.badge);
     const allNewBadges = [...liveBadges, ...newCoreBadges];
     const badgeXP = allNewBadges.reduce((sum, b) => sum + b.xpReward, 0);
     const sessionTotal = timerOnlyBase + badgeXP;
@@ -608,59 +377,7 @@ export default function WorkoutSessionScreen() {
     });
   }, [isComplete, sessionResult, user, accumulatedXP, totalElapsed, earnedBadgeIds, liveBadgesEarned, prestige, badgeStats]);
 
-  useEffect(() => {
-    let interval: ReturnType<typeof setInterval> | null = null;
-
-    if (isRunning && !isPaused) {
-      lastTickTimeRef.current = Date.now();
-
-      interval = setInterval(() => {
-        const now = Date.now();
-        const delta = Math.floor((now - lastTickTimeRef.current) / 1000);
-        if (delta < 1) return;
-        lastTickTimeRef.current = now;
-
-        setTotalElapsed(prev => prev + delta);
-        setTimeRemaining(prev => prev - delta);
-
-        if (!isPreparation && currentSegment) {
-          const xpPerSecond = getXPPerSecond(currentSegment);
-          const xpGained = xpPerSecond * streakMultiplier * delta;
-          setAccumulatedXP(prev => prev + xpGained);
-        }
-      }, 250);
-    }
-
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [isRunning, isPaused, isPreparation, currentSegment, streakMultiplier, getXPPerSecond]);
-
-  useEffect(() => {
-    const segDur = isPreparation ? 10 : (currentSegment?.duration || 1);
-    const progress = Math.min(1, Math.max(0, timeRemaining / segDur));
-
-    if (currentSegmentIndex !== prevArcSegmentRef.current) {
-      prevArcSegmentRef.current = currentSegmentIndex;
-      cancelAnimation(arcProgressSV);
-      arcProgressSV.value = 1;
-      arcProgressSV.value = withTiming(progress, { duration: 800, easing: Easing.linear });
-    } else if (isRunning && !isPaused) {
-      arcProgressSV.value = withTiming(progress, { duration: 1050, easing: Easing.linear });
-    } else {
-      cancelAnimation(arcProgressSV);
-      arcProgressSV.value = progress;
-    }
-  }, [timeRemaining, currentSegmentIndex, isRunning, isPaused, isPreparation, currentSegment]);
-
-  useEffect(() => {
-    const subscription = AppState.addEventListener('change', (nextState: AppStateStatus) => {
-      if (nextState === 'active' && isRunning && !isPaused) {
-        lastTickTimeRef.current = Date.now();
-      }
-    });
-    return () => subscription.remove();
-  }, [isRunning, isPaused]);
+  // ── Voice segment announcement ─────────────────────────────────────────────
 
   useEffect(() => {
     if (prevSegmentIndexRef.current === currentSegmentIndex) return;
@@ -684,14 +401,15 @@ export default function WorkoutSessionScreen() {
         }
         Speech.speak(announcement, { rate: 0.9 });
 
-        const isBoxingType = currentSegment.segmentType === 'shadowboxing' ||
+        const isBoxingType =
+          currentSegment.segmentType === 'shadowboxing' ||
           currentSegment.segmentType === 'combo' ||
           currentSegment.segmentType === 'doubleend' ||
           currentSegment.segmentType === 'speedbag';
         const combo = currentSegment.combo;
         if (combo && combo.length > 0 && isBoxingType && user?.preferences?.voiceComboCallouts !== false) {
           setTimeout(() => {
-            const speakableCombo = combo.map(move => {
+            const speakableCombo = combo.map((move) => {
               const m = move.toUpperCase();
               if (m === 'SLIP L') return 'slip left';
               if (m === 'SLIP R') return 'slip right';
@@ -710,6 +428,8 @@ export default function WorkoutSessionScreen() {
     }
   }, [currentSegmentIndex, isPreparation, currentSegment, isRunning, isPaused, user?.preferences]);
 
+  // ── 3-second voice countdown ───────────────────────────────────────────────
+
   useEffect(() => {
     if (timeRemaining === 3 && isRunning && !isPaused) {
       if (user?.preferences?.voiceAnnouncements !== false) {
@@ -718,99 +438,32 @@ export default function WorkoutSessionScreen() {
     }
   }, [timeRemaining, isRunning, isPaused, user?.preferences]);
 
+  // ── 10-second warning (voice + haptic + sound) ─────────────────────────────
+
   useEffect(() => {
     if (timeRemaining === 10 && isRunning && !isPaused && !isPreparation) {
       if (user?.preferences?.voiceAnnouncements !== false) {
         Speech.speak('10 seconds', { rate: 0.9 });
       }
-      if (Platform.OS !== 'web') {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      }
+      playSoundEffect.warning();
     }
   }, [timeRemaining, isRunning, isPaused, isPreparation, user?.preferences]);
 
-  useEffect(() => {
-    if (timeRemaining <= 0 && isRunning) {
-      if (isPreparation) {
-        setIsPreparation(false);
-        const firstDuration = flatSegments[0]?.duration || 60;
-        setTimeRemaining(firstDuration + timeRemaining);
-      } else if (currentSegmentIndex < flatSegments.length - 1) {
-        const finishedSeg = flatSegments[currentSegmentIndex];
-        if (finishedSeg?.segmentType === 'combo' && finishedSeg.combo && finishedSeg.combo.length > 0) {
-          const comboXP = calculateComboXP(finishedSeg.combo, finishedSeg.duration);
-          const isChamp = finishedSeg.phaseName.toLowerCase().includes('championship');
-          const finalXP = isChamp ? comboXP * 2 : comboXP;
-          setComboXPPop({ amount: finalXP, id: Date.now(), isChampionship: isChamp });
-          setTimeout(() => setComboXPPop(null), 1500);
-        }
-        const nextIdx = currentSegmentIndex + 1;
-        const nextDuration = flatSegments[nextIdx]?.duration || 60;
-        setCurrentSegmentIndex(nextIdx);
-        setTimeRemaining(nextDuration + timeRemaining);
-      } else if (!isComplete && !xpAwardedRef.current) {
-        xpAwardedRef.current = true;
-        Speech.stop();
-        setIsComplete(true);
-        setIsRunning(false);
-        if (workout) {
-          markWorkoutUsed(workout.id);
-        }
-      }
-    }
-  }, [timeRemaining, isRunning, isPreparation, currentSegmentIndex, flatSegments, workout, isComplete]);
+  // ── Handlers ───────────────────────────────────────────────────────────────
 
-  const handleStart = useCallback(() => {
+  const handleFirstStart = useCallback(() => {
     sessionActiveRef.current = true;
-    setIsRunning(true);
-    setIsPaused(false);
     if (!hasStartedOnce) {
-      setAccumulatedXP(prev => prev + 10);
+      setAccumulatedXP((prev) => prev + 10);
       setHasStartedOnce(true);
     }
-    if (Platform.OS !== 'web') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    }
-  }, [hasStartedOnce]);
-
-  const handlePauseResume = useCallback(() => {
-    setIsPaused(prev => !prev);
-    if (Platform.OS !== 'web') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    }
-  }, []);
-
-  const handleBack = useCallback(() => {
-    if (isPreparation) return;
-    if (currentSegmentIndex > 0) {
-      const prevSeg = flatSegments[currentSegmentIndex - 1];
-      setCurrentSegmentIndex(prev => prev - 1);
-      setTimeRemaining(prevSeg.duration);
-    } else {
-      setIsPreparation(true);
-      setTimeRemaining(10);
-    }
-  }, [isPreparation, currentSegmentIndex, flatSegments]);
-
-  const handleSkip = useCallback(() => {
-    if (isPreparation) {
-      setIsPreparation(false);
-      setTimeRemaining(flatSegments[0]?.duration || 60);
-    } else if (currentSegmentIndex < flatSegments.length - 1) {
-      setCurrentSegmentIndex(prev => prev + 1);
-      setTimeRemaining(flatSegments[currentSegmentIndex + 1].duration);
-    }
-  }, [isPreparation, currentSegmentIndex, flatSegments]);
+    timer.handleStart();
+  }, [hasStartedOnce, timer.handleStart]);
 
   const handleCompleteEarly = useCallback(() => {
     Speech.stop();
-    setIsComplete(true);
-    setIsRunning(false);
-    xpAwardedRef.current = true;
-    if (workout) {
-      markWorkoutUsed(workout.id);
-    }
-  }, [workout, markWorkoutUsed]);
+    timer.handleCompleteEarly();
+  }, [timer.handleCompleteEarly]);
 
   const handleExit = useCallback(() => {
     Alert.alert(
@@ -821,100 +474,96 @@ export default function WorkoutSessionScreen() {
         {
           text: 'Exit',
           style: 'destructive',
-          onPress: () => {
-            Speech.stop();
-            router.back();
-          },
+          onPress: () => { Speech.stop(); router.back(); },
         },
       ]
     );
   }, [router]);
 
-  const handleLog = useCallback((
-    logDifficulty?: 'too_easy' | 'just_right' | 'too_hard' | null,
-    logNotes?: string,
-  ) => {
-    if (!sessionResult || !user) return;
+  const handleLog = useCallback(
+    (
+      logDifficulty?: 'too_easy' | 'just_right' | 'too_hard' | null,
+      logNotes?: string,
+    ) => {
+      if (!sessionResult || !user) return;
 
-    const finalDifficulty = logDifficulty ?? difficultyRating;
-    const finalNotes = logNotes ?? notes;
+      const finalDifficulty = logDifficulty ?? difficultyRating;
+      const finalNotes = logNotes ?? notes;
+      const tier = prestige;
+      const tierStats = TIER_COMBO_STATS[tier];
 
-    const tier = prestige;
-    const tierStats = TIER_COMBO_STATS[tier];
-
-    if (sessionResult.newBadges.length > 0) {
-      addEarnedBadges(sessionResult.newBadges.map(b => b.id));
-    }
-
-    if (sessionResult.sessionTotal > 0) {
-      addXP(sessionResult.sessionTotal);
-    }
-
-    const postLogStats = computePostLogStats(completedWorkouts, user);
-    const segmentsForTracking = flatSegments.map(s => ({
-      combo: s.combo,
-      name: s.name,
-      segmentType: s.segmentType,
-      duration: s.duration,
-    }));
-    const postL100 = computePostL100Increments(user as any, sessionResult.sessionTotal, segmentsForTracking);
-
-    updateUser({
-      workoutsCompleted: (user.workoutsCompleted || 0) + 1,
-      currentStreak: postLogStats.currentStreak,
-      longestStreak: postLogStats.longestStreak,
-      lastWorkoutDate: postLogStats.lastWorkoutDate,
-      totalTrainingSeconds: (user.totalTrainingSeconds || 0) + totalElapsed,
-      ...postL100,
-    } as any);
-
-    updateBadgeStats({
-      consecutiveDays: postLogStats.currentStreak,
-      totalCombos: (badgeStats.totalCombos || 0) + PER_SESSION_ESTIMATES.combosLanded,
-      complexCombos: (badgeStats.complexCombos || 0) + tierStats.complex,
-      defenseCombos: (badgeStats.defenseCombos || 0) + tierStats.defense,
-      counterCombos: (badgeStats.counterCombos || 0) + tierStats.counter,
-      totalSessions: (user.workoutsCompleted || 0) + 1,
-      totalHours: ((user.totalTrainingSeconds || 0) + totalElapsed) / 3600,
-      singleSessionMinutes: totalElapsed / 60,
-      totalPushups: (badgeStats.totalPushups || 0) + PER_SESSION_ESTIMATES.pushups,
-      totalBurpees: (badgeStats.totalBurpees || 0) + PER_SESSION_ESTIMATES.burpees,
-      totalCurlups: (badgeStats.totalCurlups || 0) + PER_SESSION_ESTIMATES.curlups,
-      totalJogRunMinutes: (badgeStats.totalJogRunMinutes || 0) + PER_SESSION_ESTIMATES.jogRunMinutes,
-    });
-
-    addCompletedWorkout({
-      id: generateId(),
-      workoutId: workout?.id,
-      workoutName: workout?.name || 'Workout',
-      completedAt: new Date().toISOString(),
-      duration: totalElapsed,
-      xpEarned: sessionResult.sessionTotal,
-      difficulty: finalDifficulty || undefined,
-      notes: finalNotes || undefined,
-      isManualEntry: false,
-    });
-
-    const prevLevel = getLevelFromXP(prestige, user.totalXP || 0);
-    const newLevel = getLevelFromXP(prestige, (user.totalXP || 0) + sessionResult.sessionTotal);
-    const prevUnlocked = new Set(checkGloveUnlocks(prestige, prevLevel, user.currentStreak || 0));
-    const nowUnlocked = checkGloveUnlocks(prestige, newLevel, postLogStats.currentStreak);
-    const brandNew = nowUnlocked.filter(id => !prevUnlocked.has(id));
-    if (brandNew.length > 0) {
-      const gloveMap = new Map(Object.entries(GLOVES));
-      const newGloves = brandNew.map(id => gloveMap.get(id)).filter(Boolean) as Glove[];
-      if (newGloves.length > 0) {
-        setGloveUnlockOverlay(newGloves[0]);
-        gloveUnlockQueue.current.push(...newGloves.slice(1));
+      if (sessionResult.newBadges.length > 0) {
+        addEarnedBadges(sessionResult.newBadges.map((b) => b.id));
       }
-    }
+      if (sessionResult.sessionTotal > 0) {
+        addXP(sessionResult.sessionTotal);
+      }
 
-    setLogged(true);
-  }, [sessionResult, user, workout, totalElapsed, difficultyRating, notes, prestige, badgeStats, completedWorkouts, addXP, updateUser, addEarnedBadges, updateBadgeStats, addCompletedWorkout]);
+      const postLogStats = computePostLogStats(completedWorkouts, user);
+      const segmentsForTracking = flatSegments.map((s) => ({
+        combo: s.combo,
+        name: s.name,
+        segmentType: s.segmentType,
+        duration: s.duration,
+      }));
+      const postL100 = computePostL100Increments(user as any, sessionResult.sessionTotal, segmentsForTracking);
 
-  const adjustTime = useCallback((delta: number) => {
-    setTimeRemaining(prev => Math.max(0, prev + delta));
-  }, []);
+      updateUser({
+        workoutsCompleted: (user.workoutsCompleted || 0) + 1,
+        currentStreak: postLogStats.currentStreak,
+        longestStreak: postLogStats.longestStreak,
+        lastWorkoutDate: postLogStats.lastWorkoutDate,
+        totalTrainingSeconds: (user.totalTrainingSeconds || 0) + totalElapsed,
+        ...postL100,
+      } as any);
+
+      updateBadgeStats({
+        consecutiveDays: postLogStats.currentStreak,
+        totalCombos: (badgeStats.totalCombos || 0) + PER_SESSION_ESTIMATES.combosLanded,
+        complexCombos: (badgeStats.complexCombos || 0) + tierStats.complex,
+        defenseCombos: (badgeStats.defenseCombos || 0) + tierStats.defense,
+        counterCombos: (badgeStats.counterCombos || 0) + tierStats.counter,
+        totalSessions: (user.workoutsCompleted || 0) + 1,
+        totalHours: ((user.totalTrainingSeconds || 0) + totalElapsed) / 3600,
+        singleSessionMinutes: totalElapsed / 60,
+        totalPushups: (badgeStats.totalPushups || 0) + PER_SESSION_ESTIMATES.pushups,
+        totalBurpees: (badgeStats.totalBurpees || 0) + PER_SESSION_ESTIMATES.burpees,
+        totalCurlups: (badgeStats.totalCurlups || 0) + PER_SESSION_ESTIMATES.curlups,
+        totalJogRunMinutes: (badgeStats.totalJogRunMinutes || 0) + PER_SESSION_ESTIMATES.jogRunMinutes,
+      });
+
+      addCompletedWorkout({
+        id: generateId(),
+        workoutId: workout?.id,
+        workoutName: workout?.name || 'Workout',
+        completedAt: new Date().toISOString(),
+        duration: totalElapsed,
+        xpEarned: sessionResult.sessionTotal,
+        difficulty: finalDifficulty || undefined,
+        notes: finalNotes || undefined,
+        isManualEntry: false,
+      });
+
+      const prevLevel = getLevelFromXP(prestige, user.totalXP || 0);
+      const newLevel = getLevelFromXP(prestige, (user.totalXP || 0) + sessionResult.sessionTotal);
+      const prevUnlocked = new Set(checkGloveUnlocks(prestige, prevLevel, user.currentStreak || 0));
+      const nowUnlocked = checkGloveUnlocks(prestige, newLevel, postLogStats.currentStreak);
+      const brandNew = nowUnlocked.filter((gId) => !prevUnlocked.has(gId));
+      if (brandNew.length > 0) {
+        const gloveMap = new Map(Object.entries(GLOVES));
+        const newGloves = brandNew.map((gId) => gloveMap.get(gId)).filter(Boolean) as Glove[];
+        if (newGloves.length > 0) {
+          setGloveUnlockOverlay(newGloves[0]);
+          gloveUnlockQueue.current.push(...newGloves.slice(1));
+        }
+      }
+
+      setLogged(true);
+    },
+    [sessionResult, user, workout, totalElapsed, difficultyRating, notes, prestige, badgeStats, completedWorkouts, flatSegments, addXP, updateUser, addEarnedBadges, updateBadgeStats, addCompletedWorkout]
+  );
+
+  // ── Early returns ──────────────────────────────────────────────────────────
 
   if (!workout) {
     return (
@@ -927,12 +576,10 @@ export default function WorkoutSessionScreen() {
     );
   }
 
-  const handleLogFromSummary = useCallback((
+  const handleLogFromSummary = (
     rating: 'too_easy' | 'just_right' | 'too_hard' | null,
     summaryNotes: string,
-  ) => {
-    handleLog(rating, summaryNotes);
-  }, [handleLog]);
+  ) => handleLog(rating, summaryNotes);
 
   if (isComplete) {
     if (!sessionResult) {
@@ -952,37 +599,25 @@ export default function WorkoutSessionScreen() {
         logged={logged}
         onLog={handleLogFromSummary}
         onGoHome={() => router.back()}
-        onPrestige={() => {
-          const nextPrestige = PRESTIGE_ORDER[PRESTIGE_ORDER.indexOf(prestige) + 1] as Prestige;
-          if (nextPrestige) {
-            updateUser({ prestige: nextPrestige, totalXP: 0, currentLevel: 1 } as any);
-          }
-        }}
+        onPrestige={() => { executePrestige(prestige); }}
         onDismissPrestige={() => {}}
         insets={insets}
       />
     );
   }
 
-  const isShadowboxing = currentSegment?.segmentType === 'shadowboxing' ||
-    currentSegment?.name.toLowerCase().includes('shadow') ||
-    currentSegment?.name.toLowerCase().includes('technique');
-  const isSpeedbag = currentSegment?.segmentType === 'speedbag';
-  const isDoubleend = currentSegment?.segmentType === 'doubleend';
-  const rawCombo = (isSpeedbag || isDoubleend) ? undefined : (isShadowboxing ? (currentSegment?.combo || currentSegment?.nextCombo) : currentSegment?.combo);
-  const isFreestyleCombo = rawCombo?.length === 1 && rawCombo[0] === 'FREESTYLE';
-  const displayCombo = isFreestyleCombo ? undefined : rawCombo;
-
-  const isRestSegment = currentSegment?.type === 'rest' && !isPreparation;
-  const nextSegmentUsesCombos = nextSegment?.type === 'active' &&
-    (nextSegment?.segmentType === 'combo' || nextSegment?.segmentType === 'shadowboxing' ||
-     nextSegment?.segmentType === 'speedbag' || nextSegment?.segmentType === 'doubleend');
+  // ── Active workout render ──────────────────────────────────────────────────
 
   return (
     <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
+      {/* Top Bar */}
       <View style={styles.topBar}>
         <View style={styles.topBarLeft}>
-          <TouchableOpacity style={styles.topBarBtnPill} onPress={handleExit} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          <TouchableOpacity
+            style={styles.topBarBtnPill}
+            onPress={handleExit}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
             <Ionicons name="arrow-back" size={16} color={colors.dark.foreground} />
             <Ionicons name="home-outline" size={16} color={colors.dark.foreground} />
           </TouchableOpacity>
@@ -991,16 +626,7 @@ export default function WorkoutSessionScreen() {
             onPress={() => {
               Alert.alert('Restart Workout', 'Restart from the beginning?', [
                 { text: 'Cancel', style: 'cancel' },
-                {
-                  text: 'Restart',
-                  onPress: () => {
-                    setCurrentSegmentIndex(-1);
-                    setTimeRemaining(10);
-                    setTotalElapsed(0);
-                    setIsPaused(true);
-                    setAccumulatedXP(0);
-                  },
-                },
+                { text: 'Restart', onPress: () => timer.resetTimer() },
               ]);
             }}
           >
@@ -1018,13 +644,14 @@ export default function WorkoutSessionScreen() {
             <View style={styles.streakPill}>
               <Ionicons name="flame" size={12} color={colors.dark.orange} />
               <Text style={styles.streakPillText}>
-                {user?.currentStreak}d \u00B7 {streakMultiplier}x
+                {user?.currentStreak}d · {streakMultiplier}x
               </Text>
             </View>
           )}
         </View>
       </View>
 
+      {/* Overlays */}
       {levelUpLevel !== null && (
         <LevelUpOverlay
           level={levelUpLevel}
@@ -1034,7 +661,11 @@ export default function WorkoutSessionScreen() {
       )}
 
       {latestBadgePop && (
-        <Animated.View entering={FadeIn.duration(300)} exiting={FadeOut.duration(300)} style={styles.badgePopContainer}>
+        <Animated.View
+          entering={FadeIn.duration(300)}
+          exiting={FadeOut.duration(300)}
+          style={styles.badgePopContainer}
+        >
           <View style={styles.badgePopPill}>
             <Ionicons name="trophy" size={14} color={colors.dark.amber} />
             <Text style={styles.badgePopName}>{latestBadgePop.badge.name}</Text>
@@ -1042,12 +673,14 @@ export default function WorkoutSessionScreen() {
           </View>
         </Animated.View>
       )}
+
       {liveBadgesEarned.length > 0 && !latestBadgePop && (
         <View style={styles.badgeTallyContainer}>
           <View style={styles.badgeTallyPill}>
             <Ionicons name="trophy" size={12} color={colors.dark.amber} />
             <Text style={styles.badgeTallyText}>
-              {liveBadgesEarned.length} badge{liveBadgesEarned.length !== 1 ? 's' : ''} · +{liveBadgesEarned.reduce((s, lb) => s + lb.badge.xpReward, 0).toLocaleString()} XP
+              {liveBadgesEarned.length} badge{liveBadgesEarned.length !== 1 ? 's' : ''} ·{' '}
+              +{liveBadgesEarned.reduce((s, lb) => s + lb.badge.xpReward, 0).toLocaleString()} XP
             </Text>
           </View>
         </View>
@@ -1083,6 +716,7 @@ export default function WorkoutSessionScreen() {
         />
       )}
 
+      {/* Main Content */}
       <View style={styles.mainContent}>
         {isPreparation ? (
           <Text style={styles.phaseLabel}>GET READY</Text>
@@ -1100,193 +734,66 @@ export default function WorkoutSessionScreen() {
           </Text>
         )}
 
-        <View style={styles.arcTimerArea}>
-          <View style={styles.arcTimerContainer}>
-            {(() => {
-              const GAP_LEN = ARC_C - ARC_LEN;
-              return (
-                <Svg width={ARC_SIZE} height={ARC_SIZE} viewBox={`0 0 ${ARC_SIZE} ${ARC_SIZE}`}>
-                  <Circle
-                    cx={ARC_SIZE / 2}
-                    cy={ARC_SIZE / 2}
-                    r={ARC_R}
-                    fill="none"
-                    stroke={colors.dark.surface3}
-                    strokeWidth={ARC_STROKE_WIDTH}
-                    strokeDasharray={`${ARC_LEN} ${GAP_LEN}`}
-                    strokeDashoffset={ARC_START_OFFSET}
-                    strokeLinecap="round"
-                  />
-                  <AnimatedCircle
-                    cx={ARC_SIZE / 2}
-                    cy={ARC_SIZE / 2}
-                    r={ARC_R}
-                    fill="none"
-                    stroke={accentColor}
-                    strokeWidth={ARC_GLOW_STROKE}
-                    strokeDashoffset={ARC_START_OFFSET}
-                    strokeLinecap="round"
-                    opacity={0.35}
-                    animatedProps={animatedGlowProps}
-                  />
-                  <AnimatedCircle
-                    cx={ARC_SIZE / 2}
-                    cy={ARC_SIZE / 2}
-                    r={ARC_R}
-                    fill="none"
-                    stroke={accentColor}
-                    strokeWidth={ARC_STROKE_WIDTH}
-                    strokeDashoffset={ARC_START_OFFSET}
-                    strokeLinecap="round"
-                    animatedProps={animatedFillProps}
-                  />
-                </Svg>
-              );
-            })()}
-            <View style={styles.arcTimerTextWrap}>
-              <Text style={[styles.timerText, { color: accentColor }]}>
-                {formatTime(Math.max(0, Math.floor(timeRemaining)))}
-              </Text>
-            </View>
-          </View>
-          <View style={styles.verticalXPBar}>
-            <Text style={[styles.verticalXPLabel, { color: accentColor }]}>Lvl {liveLevel + 1}</Text>
-            <VerticalXPBar
-              currentXP={getXPWithinCurrentLevel(prestige, (user?.totalXP || 0) + accumulatedXP).current}
-              maxXP={getXPWithinCurrentLevel(prestige, (user?.totalXP || 0) + accumulatedXP).required}
-              prestige={prestige}
-              height={160}
-              width={10}
-            />
-            <Text style={[styles.verticalXPLabel, { color: accentColor }]}>Lvl {liveLevel}</Text>
-          </View>
-        </View>
+        <ArcTimer
+          arcProgressSV={arcProgressSV}
+          accentColor={accentColor}
+          timeRemaining={timeRemaining}
+          prestige={prestige}
+          liveLevel={liveLevel}
+          userTotalXP={user?.totalXP || 0}
+          accumulatedXP={accumulatedXP}
+        />
 
         <View style={styles.segmentNameRow}>
           <View style={[styles.segmentLine, { backgroundColor: accentColor + '40' }]} />
-          <Text style={[styles.segmentName, isChampionship && { color: colors.dark.yellow }, isCooldown && { color: colors.dark.blue }]}>
-            {isPreparation ? 'PREPARATION' : (
-              currentSegment?.name || 'WORK'
-            )}
+          <Text
+            style={[
+              styles.segmentName,
+              isChampionship && { color: colors.dark.yellow },
+              isCooldown && { color: colors.dark.blue },
+            ]}
+          >
+            {isPreparation ? 'PREPARATION' : currentSegment?.name || 'WORK'}
             {isChampionship && !isPreparation ? ' / 2XP' : ''}
           </Text>
           <View style={[styles.segmentLine, { backgroundColor: accentColor + '40' }]} />
         </View>
 
-        <View style={styles.adjustRow}>
-          {['-30', '-15', '+15', '+30'].map((val) => (
-            <TouchableOpacity
-              key={val}
-              style={styles.adjustBtn}
-              onPress={() => adjustTime(parseInt(val))}
-            >
-              <Text style={styles.adjustBtnText}>{val}s</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {isRestSegment && nextSegment && (
-          <View style={[styles.comboCard, { borderColor: accentColor + '30' }]}>
-            <Text style={[styles.comboCardLabel, { color: accentColor + '99' }]}>UP NEXT</Text>
-            <Text style={[styles.comboCardTitle, { color: accentColor }]}>{nextSegment.name || 'FINISH'}</Text>
-          </View>
-        )}
-
-        {isRestSegment && currentSegment?.section === 'grind' && currentSegment?.cumulativeRound != null && !roundFeedbacks[currentSegment.cumulativeRound] && (
-          <View style={{ width: '100%', maxWidth: 300, marginTop: 12 }}>
-            <RoundFeedbackPanel
-              roundNumber={currentSegment.cumulativeRound}
-              onRate={(rating) => {
-                setRoundFeedbacks(prev => ({ ...prev, [currentSegment.cumulativeRound!]: rating }));
-              }}
-            />
-          </View>
-        )}
-
-        {!isPreparation && displayCombo && displayCombo.length > 0 && (
-          <View style={styles.comboCard}>
-            {isShadowboxing && (
-              <Text style={[styles.comboCardLabel, { color: accentColor }]}>INCOMING COMBO</Text>
-            )}
-            <View style={styles.comboMoves}>
-              {displayCombo.map((move, idx) => {
-                const dm = getDisplayMove(move);
-                return (
-                  <View key={idx} style={styles.comboMoveRow}>
-                    <View style={[styles.moveBadge, { borderColor: getMoveColor(dm.type) + '60' }]}>
-                      <Text style={[styles.moveBadgeText, { color: getMoveColor(dm.type) }]}>
-                        {dm.display}
-                      </Text>
-                    </View>
-                    {idx < displayCombo.length - 1 && (
-                      <Ionicons name="chevron-forward" size={12} color={colors.dark.mutedForeground} />
-                    )}
-                  </View>
-                );
-              })}
-            </View>
-          </View>
-        )}
-
-        {!isPreparation && !displayCombo && !isRestSegment && currentSegment?.type === 'active' &&
-         (currentSegment?.segmentType === 'combo' || currentSegment?.segmentType === 'speedbag' || currentSegment?.segmentType === 'doubleend' || isShadowboxing) && (
-          <View style={styles.comboCard}>
-            <Text style={[styles.freestyleText, { color: accentColor }]}>FREESTYLE</Text>
-          </View>
-        )}
+        <ComboDisplay
+          isRestSegment={isRestSegment}
+          currentSegment={currentSegment}
+          nextSegment={nextSegment}
+          displayCombo={displayCombo}
+          isShadowboxing={isShadowboxing && !isRestSegment}
+          accentColor={accentColor}
+          roundFeedbacks={roundFeedbacks}
+          onRoundFeedback={(round, rating) =>
+            setRoundFeedbacks((prev) => ({ ...prev, [round]: rating }))
+          }
+        />
       </View>
 
-      <View style={styles.bottomSection}>
-        <View style={styles.progressInfo}>
-          <Text style={styles.progressPhase}>
-            {isPreparation ? 'PREP' : currentSegment?.phaseName || 'WARMUP'}
-          </Text>
-          <View style={styles.progressNext}>
-            <View style={[styles.progressDot, { backgroundColor: accentColor }]} />
-            <Text style={styles.progressNextText}>
-              {isPreparation ? flatSegments[0]?.name : nextSegment?.name || 'FINISH'}
-            </Text>
-          </View>
-        </View>
-        <View style={styles.progressBarBg}>
-          <View style={[styles.progressBarFill, { width: `${progressPercent}%`, backgroundColor: accentColor }]} />
-        </View>
-        <View style={styles.progressMeta}>
-          <Text style={styles.progressSection}>
-            {isPreparation ? 'PREP' : currentSegment?.section?.toUpperCase()}
-          </Text>
-          <Text style={[styles.progressCount, { color: accentColor }]}>
-            {isPreparation ? '0' : currentSegmentIndex + 1}/{totalSegments}
-          </Text>
-        </View>
-        <View style={styles.controls}>
-          <TouchableOpacity
-            style={[styles.controlBtn, isPreparation && styles.controlBtnDisabled]}
-            onPress={handleBack}
-            disabled={isPreparation}
-          >
-            <Ionicons name="play-skip-back" size={22} color={colors.dark.foreground} />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.playBtn, { backgroundColor: accentColor }]}
-            onPress={isPaused ? handleStart : handlePauseResume}
-          >
-            <Ionicons
-              name={isPaused ? 'play' : 'pause'}
-              size={32}
-              color={colors.dark.background}
-            />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.controlBtn} onPress={handleSkip}>
-            <Ionicons name="play-skip-forward" size={22} color={colors.dark.foreground} />
-          </TouchableOpacity>
-        </View>
-      </View>
+      {/* Controls */}
+      <WorkoutControls
+        isPaused={isPaused}
+        isPreparation={isPreparation}
+        accentColor={accentColor}
+        currentPhaseName={currentSegment?.phaseName || 'WARMUP'}
+        nextSegmentName={isPreparation ? flatSegments[0]?.name : nextSegment?.name || 'FINISH'}
+        progressPercent={progressPercent}
+        currentSection={currentSegment?.section?.toUpperCase() || ''}
+        currentSegmentNum={currentSegmentIndex + 1}
+        totalSegments={totalSegments}
+        onTogglePause={isPaused ? handleFirstStart : timer.togglePause}
+        onSkipBack={handleBack}
+        onSkipForward={skipSegment}
+        onAdjustTime={adjustTime}
+      />
     </View>
   );
 }
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   container: {
@@ -1310,7 +817,7 @@ const styles = StyleSheet.create({
   goHomeBtnText: {
     color: colors.dark.foreground,
     fontSize: 14,
-    fontWeight: '600' as const,
+    fontWeight: '600',
   },
   calculatingText: {
     color: colors.dark.mutedForeground,
@@ -1356,7 +863,7 @@ const styles = StyleSheet.create({
   },
   elapsedTime: {
     fontSize: 20,
-    fontWeight: '900' as const,
+    fontWeight: '900',
     fontVariant: ['tabular-nums'],
   },
   streakPill: {
@@ -1372,7 +879,7 @@ const styles = StyleSheet.create({
   },
   streakPillText: {
     fontSize: 10,
-    fontWeight: '700' as const,
+    fontWeight: '700',
     color: colors.dark.orange,
   },
   mainContent: {
@@ -1383,7 +890,7 @@ const styles = StyleSheet.create({
   },
   phaseLabel: {
     fontSize: 11,
-    fontWeight: '700' as const,
+    fontWeight: '700',
     color: colors.dark.mutedForeground,
     textTransform: 'uppercase',
     letterSpacing: 2,
@@ -1394,40 +901,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     marginBottom: 8,
-  },
-  arcTimerArea: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-    width: '100%',
-  },
-  arcTimerContainer: {
-    width: 260,
-    height: 260,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  arcTimerTextWrap: {
-    position: 'absolute',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  timerText: {
-    fontSize: 64,
-    fontWeight: '900' as const,
-    fontVariant: ['tabular-nums'],
-  },
-  verticalXPBar: {
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    height: 200,
-    marginLeft: -8,
-  },
-  verticalXPLabel: {
-    fontSize: 10,
-    fontWeight: '800' as const,
-    letterSpacing: 0.5,
   },
   segmentNameRow: {
     flexDirection: 'row',
@@ -1443,166 +916,12 @@ const styles = StyleSheet.create({
   },
   segmentName: {
     fontSize: 16,
-    fontWeight: '900' as const,
+    fontWeight: '900',
     color: colors.dark.foreground,
     textTransform: 'uppercase',
     letterSpacing: 1,
     textAlign: 'center',
     flexShrink: 1,
-  },
-  adjustRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 20,
-  },
-  adjustBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.dark.surface3,
-  },
-  adjustBtnText: {
-    fontSize: 12,
-    fontWeight: '500' as const,
-    color: colors.dark.mutedForeground,
-  },
-  comboCard: {
-    width: '100%',
-    maxWidth: 300,
-    backgroundColor: colors.dark.surface1,
-    borderRadius: 16,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: colors.dark.surface3,
-    alignItems: 'center',
-  },
-  comboCardLabel: {
-    fontSize: 10,
-    fontWeight: '700' as const,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginBottom: 8,
-    textAlign: 'center',
-  },
-  comboCardTitle: {
-    fontSize: 18,
-    fontWeight: '900' as const,
-    textTransform: 'uppercase',
-    textAlign: 'center',
-  },
-  comboMoves: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 6,
-  },
-  comboMoveRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  moveBadge: {
-    minWidth: 36,
-    height: 36,
-    borderRadius: 8,
-    borderWidth: 1.5,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 6,
-    backgroundColor: colors.dark.surface2,
-  },
-  moveBadgeText: {
-    fontSize: 18,
-    fontWeight: '900' as const,
-  },
-  freestyleText: {
-    fontSize: 22,
-    fontWeight: '900' as const,
-    textAlign: 'center',
-    textTransform: 'uppercase',
-  },
-  bottomSection: {
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-  },
-  progressInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  progressPhase: {
-    fontSize: 12,
-    fontWeight: '700' as const,
-    color: colors.dark.foreground,
-    textTransform: 'uppercase',
-  },
-  progressNext: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  progressDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  progressNextText: {
-    fontSize: 11,
-    color: colors.dark.mutedForeground,
-  },
-  progressBarBg: {
-    height: 3,
-    borderRadius: 1.5,
-    backgroundColor: colors.dark.surface2,
-    overflow: 'hidden',
-    marginBottom: 4,
-  },
-  progressBarFill: {
-    height: '100%',
-    borderRadius: 1.5,
-  },
-  progressMeta: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 12,
-  },
-  progressSection: {
-    fontSize: 10,
-    color: colors.dark.mutedForeground,
-    textTransform: 'uppercase',
-  },
-  progressCount: {
-    fontSize: 10,
-    fontWeight: '700' as const,
-  },
-  controls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 20,
-  },
-  controlBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: colors.dark.surface1,
-    borderWidth: 1,
-    borderColor: colors.dark.surface3,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  controlBtnDisabled: {
-    opacity: 0.3,
-  },
-  playBtn: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   badgePopContainer: {
     alignItems: 'center',
@@ -1622,14 +941,14 @@ const styles = StyleSheet.create({
   },
   badgePopName: {
     fontSize: 11,
-    fontWeight: '700' as const,
+    fontWeight: '700',
     color: colors.dark.amber,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   badgePopXP: {
     fontSize: 11,
-    fontWeight: '900' as const,
+    fontWeight: '900',
     color: colors.dark.volt,
   },
   badgeTallyContainer: {
@@ -1649,7 +968,7 @@ const styles = StyleSheet.create({
   },
   badgeTallyText: {
     fontSize: 10,
-    fontWeight: '700' as const,
+    fontWeight: '700',
     color: colors.dark.amber,
   },
   comboXPPopContainer: {
