@@ -39,3 +39,6 @@ yarn-error.*
 .vercel
 
 .env
+
+# Large reference assets (not source code)
+attached_assets/

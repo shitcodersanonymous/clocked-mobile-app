@@ -185,7 +185,7 @@ export default function SettingsScreen() {
           style: 'destructive',
           onPress: async () => {
             useUserStore.setState({ user: null, hasCompletedOnboarding: false });
-            useWorkoutStore.setState({ workouts: [], archivedWorkouts: [], presetsLoaded: false });
+            useWorkoutStore.setState({ workouts: [], archivedWorkouts: [] });
             useHistoryStore.setState({ completedWorkouts: [] });
             useBadgeStore.setState({ earnedBadgeIds: [] });
             useGloveStore.setState({ equippedGlove: 'default' });
