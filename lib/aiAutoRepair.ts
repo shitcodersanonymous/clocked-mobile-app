@@ -65,7 +65,9 @@ export function autoRepair(result: any): any {
 
     for (const seg of (phase.segments || [])) {
       if (seg.duration < 5) seg.duration = 10;
-      if (seg.duration > 600) seg.duration = 300;
+      const nameLc = (seg.name || '').toLowerCase();
+      const isContinuous = ['treadmill','run','jog','row','bike','cycling','jump rope','skipping','stretching','foam roll','yoga','walk'].some(k => nameLc.includes(k));
+      if (seg.duration > 600) seg.duration = isContinuous ? Math.min(seg.duration, 3600) : 300;
 
       if (seg.type === 'active' && !seg.segmentType) {
         const nameLower = (seg.name || '').toLowerCase();

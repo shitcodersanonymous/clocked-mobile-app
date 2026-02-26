@@ -94,6 +94,9 @@ FREESTYLE OPTION: A combo entry can be ["FREESTYLE"] instead of punch tokens. Th
 - Use ["FREESTYLE"] when: user says "freestyle", "do your own thing", "no specific combos", or for championship/finisher rounds
 - A workout can mix real combos and freestyle: [["1","2","3"], ["1","2","SLIP L","3"], ["FREESTYLE"]]
 - If the user says "all freestyle" or "no combos", set every combo entry to ["FREESTYLE"]
+- SHADOWBOXING DEFAULT: When the workout type is shadowboxing and the user has NOT specified combos for each round, use ["FREESTYLE"] as the combo for every round. Do NOT generate numbered combos (like ["1","2","3"]) for shadowboxing rounds unless the user explicitly requests specific combinations.
+
+CRITICAL — EXACT COMBO PRESERVATION: When the user specifies exact combos per round (e.g. "Round 1: 1-2, Round 2: 1-2-3" or "Round 1: 1-2-7"), you MUST use those EXACT combos verbatim, converted to token arrays. Do NOT substitute, rearrange, improve, or add defense moves to user-specified combos. User combos are sacred — copy them exactly as given.
 
 ### RULE 4: WARMUP & COOLDOWN ARE OPTIONAL
 Only include warmup/cooldown if the user asks for it or the prompt implies a full session.
@@ -282,44 +285,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Missing prompt', fallback: true });
       }
 
-      const geminiRes = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${GEMINI_API_KEY}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: buildUserMessage(body) }] }],
-            systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-            generationConfig: { maxOutputTokens: 2000, temperature: 0.7 },
-          }),
+      const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+      const geminiBody = JSON.stringify({
+        contents: [{ parts: [{ text: buildUserMessage(body) }] }],
+        systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+        generationConfig: { maxOutputTokens: 2000, temperature: 0.7 },
+      });
+
+      let parsed: any = null;
+      let lastError = '';
+
+      for (let attempt = 0; attempt < 2; attempt++) {
+        if (attempt > 0) {
+          console.log('[KOI] Retrying after 2s...');
+          await new Promise(r => setTimeout(r, 2000));
         }
-      );
 
-      if (!geminiRes.ok) {
-        const errText = await geminiRes.text();
-        console.error('[KOI] Gemini API error:', geminiRes.status, errText);
-        return res.status(502).json({ error: 'AI generation failed', fallback: true });
+        let geminiRes: Response;
+        try {
+          geminiRes = await fetch(geminiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: geminiBody,
+          });
+        } catch (fetchErr) {
+          lastError = 'fetch failed';
+          continue;
+        }
+
+        if (!geminiRes.ok) {
+          const errText = await geminiRes.text();
+          console.error(`[KOI] Gemini API error (attempt ${attempt + 1}):`, geminiRes.status, errText);
+          lastError = 'AI generation failed';
+          continue;
+        }
+
+        const data = await geminiRes.json();
+        const rawText: string = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+        if (!rawText) {
+          console.error('[KOI] Empty response from Gemini');
+          lastError = 'Empty AI response';
+          continue;
+        }
+
+        let jsonStr = rawText.trim();
+        if (jsonStr.startsWith('```')) {
+          jsonStr = jsonStr.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
+        }
+
+        try {
+          parsed = JSON.parse(jsonStr);
+          break;
+        } catch (e) {
+          console.error(`[KOI] JSON parse error (attempt ${attempt + 1}):`, e, 'Raw:', rawText.substring(0, 200));
+          lastError = 'Invalid JSON from AI';
+        }
       }
 
-      const data = await geminiRes.json();
-      const rawText: string = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-
-      if (!rawText) {
-        console.error('[KOI] Empty response from Gemini');
-        return res.status(422).json({ error: 'Empty AI response', fallback: true });
-      }
-
-      let jsonStr = rawText.trim();
-      if (jsonStr.startsWith('```')) {
-        jsonStr = jsonStr.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
-      }
-
-      let parsed: any;
-      try {
-        parsed = JSON.parse(jsonStr);
-      } catch (e) {
-        console.error('[KOI] JSON parse error:', e, 'Raw:', rawText.substring(0, 200));
-        return res.status(422).json({ error: 'Invalid JSON from AI', fallback: true });
+      if (!parsed) {
+        return res.status(422).json({ error: lastError || 'AI generation failed', fallback: true });
       }
 
       parsed = autoRepair(parsed);
