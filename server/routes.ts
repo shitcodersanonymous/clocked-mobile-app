@@ -94,9 +94,11 @@ FREESTYLE OPTION: A combo entry can be ["FREESTYLE"] instead of punch tokens. Th
 - Use ["FREESTYLE"] when: user says "freestyle", "do your own thing", "no specific combos", or for championship/finisher rounds
 - A workout can mix real combos and freestyle: [["1","2","3"], ["1","2","SLIP L","3"], ["FREESTYLE"]]
 - If the user says "all freestyle" or "no combos", set every combo entry to ["FREESTYLE"]
-- SHADOWBOXING DEFAULT: When the workout type is shadowboxing and the user has NOT specified combos for each round, use ["FREESTYLE"] as the combo for every round. Do NOT generate numbered combos (like ["1","2","3"]) for shadowboxing rounds unless the user explicitly requests specific combinations.
 
 CRITICAL — EXACT COMBO PRESERVATION: When the user specifies exact combos per round (e.g. "Round 1: 1-2, Round 2: 1-2-3" or "Round 1: 1-2-7"), you MUST use those EXACT combos verbatim, converted to token arrays. Do NOT substitute, rearrange, improve, or add defense moves to user-specified combos. User combos are sacred — copy them exactly as given.
+
+### RULE 3a: SHADOWBOXING WITHOUT SPECIFIED COMBOS
+When the workout type is shadowboxing and the user has NOT specified combos per round, you MUST use ["FREESTYLE"] as the combo for every round. Do NOT generate numbered combos as a substitute. Only use numbered combos for shadowboxing if the user explicitly requests specific combinations or a specific focus (e.g. "shadowboxing focusing on hooks").
 
 ### RULE 4: WARMUP & COOLDOWN ARE OPTIONAL
 Only include warmup/cooldown if the user asks for it or the prompt implies a full session.
@@ -142,6 +144,8 @@ IMPORTANT: No gloves/wraps does NOT mean no combos. It means no heavy bag, speed
 - segmentType "doubleend" → not available
 - Warmup: no Jump Rope → use High Knees/Jumping Jacks instead
 
+HARD RULE — EQUIPMENT ENFORCEMENT: If the user's equipment list does NOT include a specific piece of equipment, you MUST NEVER output a segmentType that requires it. No speedBag in equipment = NEVER output segmentType "speedbag". No doubleEndBag in equipment = NEVER output segmentType "doubleend". No heavyBag = NEVER output segmentType "combo". Violating this rule makes the workout unplayable on device.
+
 ### RULE 9: MEGASET REPEATS
 - Default is always megasetRepeats: 1
 - Only set megasetRepeats > 1 when user explicitly says "repeat everything twice", "run it back", "do it again", etc.
@@ -161,6 +165,7 @@ Generate diverse, realistic combinations:
 - Punch numbering is stance-agnostic: 1 = lead jab, 2 = rear cross, regardless of orthodox or southpaw. Do NOT reference stance.
 - IMPORTANT — PROGRESSIVE DIFFICULTY: Combos MUST get harder as the workout progresses. Start with simpler, shorter combos in early rounds and build to longer, more complex combos in later rounds. Round 1 might be a simple 1-2, while the last round could be a full-length combo with defense. This applies to ALL tiers — even beginners start simple and progress within their allowed punch range.
 - Include natural power sequences: "1","2" (jab-cross), "3","2" (hook-cross), "5","2" (uppercut-cross), etc.
+- The progressive difficulty and combo variety rules apply equally to shadowboxing phases with numbered combos. Every combo in a phase MUST be unique — never repeat the same combo twice in a single phase. If the user requests a focus (e.g. "hooks", "defense"), generate varied combos built around that focus, not the same combo repeated.
 
 ### RULE 12: ROUND-BASED STRUCTURE FOR BOXING & CONDITIONING
 When the user requests a boxing, shadowboxing, or conditioning workout:
@@ -289,7 +294,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const geminiBody = JSON.stringify({
         contents: [{ parts: [{ text: buildUserMessage(body) }] }],
         systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-        generationConfig: { maxOutputTokens: 2000, temperature: 0.7 },
+        generationConfig: { maxOutputTokens: 4000, temperature: 0.7 },
       });
 
       let parsed: any = null;
