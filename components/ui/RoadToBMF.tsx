@@ -1,145 +1,101 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import Animated, { useAnimatedStyle, withTiming, withDelay } from 'react-native-reanimated';
+import { Ionicons } from '@expo/vector-icons';
 import colors, { PRESTIGE_COLORS } from '@/constants/colors';
 import { Prestige, PRESTIGE_NAMES, PRESTIGE_ORDER } from '@/lib/xpSystem';
 
-interface Milestone {
-  label: string;
-  threshold: number;
-  icon: keyof typeof MaterialCommunityIcons.glyphMap;
-}
-
-const MILESTONES: Milestone[] = [
-  { label: 'First Blood', threshold: 1, icon: 'sword' },
-  { label: 'Regular', threshold: 10, icon: 'fire' },
-  { label: 'Committed', threshold: 25, icon: 'shield-check' },
-  { label: 'Veteran', threshold: 50, icon: 'shield-star' },
-  { label: 'Warrior', threshold: 100, icon: 'sword-cross' },
-  { label: 'Legend', threshold: 150, icon: 'trophy' },
-  { label: 'BMF', threshold: 250, icon: 'crown' },
-];
+const TIER_SHORT: Record<Prestige, string> = {
+  rookie: 'ROOK',
+  beginner: 'BEG',
+  intermediate: 'INT',
+  advanced: 'ADV',
+  pro: 'PRO',
+};
 
 interface RoadToBMFProps {
   workoutsCompleted: number;
   prestige: Prestige;
   level: number;
+  currentStreak?: number;
 }
 
-function MilestoneDot({ milestone, index, reached, prestigeColor, progress }: {
-  milestone: Milestone;
-  index: number;
-  reached: boolean;
-  prestigeColor: string;
-  progress: number;
-}) {
-  const dotStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: withDelay(index * 80, withTiming(reached ? 1.0 : 0.7, { duration: 400 })) }],
-    opacity: withDelay(index * 80, withTiming(reached ? 1 : 0.35, { duration: 400 })),
-  }));
-
-  return (
-    <Animated.View style={[styles.milestoneContainer, dotStyle]}>
-      <View style={[
-        styles.dot,
-        reached ? { backgroundColor: prestigeColor, borderColor: prestigeColor } : styles.dotLocked,
-      ]}>
-        <MaterialCommunityIcons
-          name={milestone.icon}
-          size={index === MILESTONES.length - 1 ? 20 : 16}
-          color={reached ? colors.dark.background : colors.dark.mutedForeground}
-        />
-      </View>
-      <Text style={[
-        styles.milestoneLabel,
-        reached && { color: prestigeColor },
-      ]} numberOfLines={1}>
-        {milestone.label}
-      </Text>
-      <Text style={[
-        styles.milestoneThreshold,
-        reached && { color: colors.dark.foreground },
-      ]}>
-        {milestone.threshold}
-      </Text>
-    </Animated.View>
-  );
-}
-
-export default function RoadToBMF({ workoutsCompleted, prestige, level }: RoadToBMFProps) {
-  const prestigeColor = PRESTIGE_COLORS[prestige] || PRESTIGE_COLORS.rookie;
+export default function RoadToBMF({
+  workoutsCompleted,
+  prestige,
+  level,
+  currentStreak = 0,
+}: RoadToBMFProps) {
   const prestigeIndex = PRESTIGE_ORDER.indexOf(prestige);
 
-  const lastReachedIdx = MILESTONES.reduce((acc, m, i) => workoutsCompleted >= m.threshold ? i : acc, -1);
-  const nextIdx = lastReachedIdx + 1;
-  const segmentProgress = nextIdx < MILESTONES.length
-    ? Math.min(1, (workoutsCompleted - (lastReachedIdx >= 0 ? MILESTONES[lastReachedIdx].threshold : 0)) /
-        (MILESTONES[nextIdx].threshold - (lastReachedIdx >= 0 ? MILESTONES[lastReachedIdx].threshold : 0)))
-    : 1;
+  const overallPct = Math.min(
+    100,
+    Math.round(((prestigeIndex * 100 + level) / (PRESTIGE_ORDER.length * 100)) * 100)
+  );
 
-  const overallProgress = Math.min(1, workoutsCompleted / 250);
+  const bmfProgress = Math.min(1, workoutsCompleted / 250);
+  const bmfkProgress = Math.min(1, currentStreak / 365);
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Road to BMF</Text>
-        <View style={styles.statsRow}>
-          <Text style={styles.prestigeLabel}>
-            {PRESTIGE_NAMES[prestige]} L{level}
-          </Text>
-          <Text style={styles.workoutCount}>
-            {workoutsCompleted}/250
-          </Text>
-        </View>
+        <Text style={styles.title}>ROAD TO BMFK</Text>
+        <Text style={styles.pct}>{overallPct}%</Text>
       </View>
 
-      <View style={styles.progressBarContainer}>
-        <View style={styles.progressBarBg}>
-          <View style={[styles.progressBarFill, { width: `${overallProgress * 100}%`, backgroundColor: prestigeColor }]} />
-        </View>
-        <View style={styles.prestigeDotsRow}>
-          {PRESTIGE_ORDER.map((p, i) => (
-            <View
-              key={p}
-              style={[
-                styles.prestigeDot,
-                i <= prestigeIndex
-                  ? { backgroundColor: PRESTIGE_COLORS[p], borderColor: PRESTIGE_COLORS[p] }
-                  : { backgroundColor: 'transparent', borderColor: colors.dark.surface4 },
-              ]}
-            />
-          ))}
-        </View>
+      {PRESTIGE_ORDER.map((p, i) => {
+        const isCompleted = i < prestigeIndex;
+        const isCurrent = i === prestigeIndex;
+        const tierLevel = isCompleted ? 100 : isCurrent ? level : 0;
+        const barWidth = isCompleted ? '100%' : isCurrent ? `${Math.max(2, (level / 100) * 100)}%` : '0%';
+        const barColor = isCompleted
+          ? colors.dark.surface4
+          : isCurrent
+          ? colors.dark.volt
+          : colors.dark.surface3;
+
+        return (
+          <View key={p} style={styles.tierRow}>
+            <Text style={[styles.tierLabel, isCurrent && styles.tierLabelActive]}>
+              {TIER_SHORT[p]}
+            </Text>
+            <View style={styles.barBg}>
+              <View style={[styles.barFill, { width: barWidth as any, backgroundColor: barColor }]} />
+            </View>
+            <Text style={[styles.tierCount, isCurrent && styles.tierCountActive]}>
+              {tierLevel}
+            </Text>
+          </View>
+        );
+      })}
+
+      <View style={styles.divider}>
+        <View style={styles.dividerLine} />
+        <Text style={styles.dividerText}>FINAL BOSS</Text>
+        <View style={styles.dividerLine} />
       </View>
 
-      <View style={styles.milestonesRow}>
-        {MILESTONES.map((m, i) => {
-          const reached = workoutsCompleted >= m.threshold;
-          return (
-            <React.Fragment key={m.label}>
-              {i > 0 && (
-                <View style={styles.connectorContainer}>
-                  <View style={[
-                    styles.connector,
-                    reached
-                      ? { backgroundColor: prestigeColor }
-                      : (workoutsCompleted >= (MILESTONES[i - 1]?.threshold ?? 0))
-                        ? { backgroundColor: prestigeColor, opacity: segmentProgress * (nextIdx === i ? 1 : 0) + (lastReachedIdx >= i ? 1 : 0.15) }
-                        : { backgroundColor: colors.dark.surface4 },
-                  ]} />
-                </View>
-              )}
-              <MilestoneDot
-                milestone={m}
-                index={i}
-                reached={reached}
-                prestigeColor={prestigeColor}
-                progress={overallProgress}
-              />
-            </React.Fragment>
-          );
-        })}
+      <View style={styles.bossRow}>
+        <Text style={styles.bossLabel}>BMF</Text>
+        <View style={styles.barBg}>
+          <View style={[styles.barFill, { width: `${bmfProgress * 100}%` as any, backgroundColor: '#8B1A1A' }]} />
+        </View>
+        <Text style={styles.bossCount}>{workoutsCompleted}/250</Text>
+      </View>
+      <View style={styles.bossHint}>
+        <Ionicons name="trophy-outline" size={11} color={colors.dark.mutedForeground} />
+        <Text style={styles.bossHintText}>250 total sessions — Baddest MF</Text>
+      </View>
+
+      <View style={[styles.bossRow, { marginTop: 10 }]}>
+        <Text style={styles.bossLabel}>BMFK</Text>
+        <View style={styles.barBg}>
+          <View style={[styles.barFill, { width: `${bmfkProgress * 100}%` as any, backgroundColor: '#8B1A1A' }]} />
+        </View>
+        <Text style={styles.bossCount}>{currentStreak}/365</Text>
+      </View>
+      <View style={styles.bossHint}>
+        <Ionicons name="flame-outline" size={11} color={colors.dark.mutedForeground} />
+        <Text style={styles.bossHintText}>365 consecutive days — Baddest MF Killer</Text>
       </View>
     </View>
   );
@@ -152,96 +108,111 @@ const styles = StyleSheet.create({
     padding: 16,
     borderWidth: 1,
     borderColor: colors.dark.border,
+    marginBottom: 16,
   },
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 14,
   },
   title: {
-    color: colors.dark.foreground,
-    fontSize: 16,
+    color: colors.dark.mutedForeground,
+    fontSize: 12,
     fontWeight: '700' as const,
-    marginBottom: 4,
+    letterSpacing: 1.2,
   },
-  statsRow: {
+  pct: {
+    color: colors.dark.volt,
+    fontSize: 15,
+    fontWeight: '800' as const,
+  },
+  tierRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    marginBottom: 8,
+    gap: 8,
   },
-  prestigeLabel: {
-    color: colors.dark.mutedForeground,
-    fontSize: 13,
-  },
-  workoutCount: {
-    color: colors.dark.mutedForeground,
-    fontSize: 13,
-    fontWeight: '600' as const,
-  },
-  progressBarContainer: {
-    marginBottom: 18,
-  },
-  progressBarBg: {
-    height: 6,
-    backgroundColor: colors.dark.surface3,
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  progressBarFill: {
-    height: '100%',
-    borderRadius: 3,
-  },
-  prestigeDotsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 6,
-    paddingHorizontal: 4,
-  },
-  prestigeDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    borderWidth: 1.5,
-  },
-  milestonesRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-  },
-  milestoneContainer: {
-    alignItems: 'center',
-    width: 42,
-  },
-  dot: {
+  tierLabel: {
     width: 34,
-    height: 34,
-    borderRadius: 17,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 4,
-  },
-  dotLocked: {
-    backgroundColor: colors.dark.surface3,
-    borderColor: colors.dark.surface4,
-  },
-  milestoneLabel: {
-    color: colors.dark.mutedForeground,
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: '600' as const,
-    textAlign: 'center',
-  },
-  milestoneThreshold: {
     color: colors.dark.mutedForeground,
-    fontSize: 8,
-    textAlign: 'center',
-    opacity: 0.7,
+    textAlign: 'right',
   },
-  connectorContainer: {
+  tierLabelActive: {
+    color: colors.dark.volt,
+    fontWeight: '800' as const,
+  },
+  barBg: {
     flex: 1,
-    justifyContent: 'center',
-    paddingTop: 10,
+    height: 8,
+    backgroundColor: colors.dark.surface3,
+    borderRadius: 4,
+    overflow: 'hidden',
+    position: 'relative',
   },
-  connector: {
-    height: 2,
-    borderRadius: 1,
+  barFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+  tierCount: {
+    width: 28,
+    fontSize: 12,
+    fontWeight: '600' as const,
+    color: colors.dark.mutedForeground,
+    textAlign: 'right',
+  },
+  tierCountActive: {
+    color: colors.dark.foreground,
+    fontWeight: '700' as const,
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginVertical: 14,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: colors.dark.border,
+  },
+  dividerText: {
+    fontSize: 10,
+    fontWeight: '800' as const,
+    color: colors.dark.volt,
+    letterSpacing: 1.5,
+  },
+  bossRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  bossLabel: {
+    width: 34,
+    fontSize: 11,
+    fontWeight: '700' as const,
+    color: '#EF4444',
+    textAlign: 'right',
+  },
+  bossCount: {
+    width: 42,
+    fontSize: 11,
+    fontWeight: '700' as const,
+    color: colors.dark.mutedForeground,
+    textAlign: 'right',
+  },
+  bossHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginLeft: 42,
+    marginTop: 4,
+  },
+  bossHintText: {
+    fontSize: 10,
+    color: colors.dark.mutedForeground,
+    fontStyle: 'italic',
   },
 });

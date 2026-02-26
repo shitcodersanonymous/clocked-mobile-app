@@ -38,6 +38,7 @@ import {
   getBadgeByIdCombined,
 } from '@/data/badges';
 import { GLOVES, checkGloveUnlocks } from '@/data/gloves';
+import { useGloveStore } from '@/stores/gloveStore';
 import { formatRelativeDate } from '@/lib/utils';
 import { executePrestige } from '@/lib/prestigeActions';
 
@@ -48,6 +49,8 @@ export default function StatsScreen() {
   const updateUser = useUserStore((s) => s.updateUser);
   const completedWorkouts = useHistoryStore((s) => s.completedWorkouts);
   const { earnedBadgeIds, badgeStats } = useBadgeStore();
+  const equippedGloveId = useGloveStore((s) => s.equippedGlove) || user?.equippedGlove || 'default';
+  const equippedGlove = GLOVES[equippedGloveId] || GLOVES.default;
 
   const prestige: Prestige = (user?.prestige as Prestige) || 'beginner';
   const currentLevel = user?.currentLevel || 1;
@@ -262,14 +265,11 @@ export default function StatsScreen() {
         <View
           style={[
             styles.gloveColorBox,
-            {
-              backgroundColor:
-                GLOVES.default.tierThemeColor,
-            },
+            { backgroundColor: equippedGlove.tierThemeColor },
           ]}
         />
         <View style={{ flex: 1 }}>
-          <Text style={styles.gloveCardName}>Equipped Glove</Text>
+          <Text style={styles.gloveCardName}>{equippedGlove.name}</Text>
           <Text style={styles.gloveCardSub}>
             {unlockedGloveCount}/52 Gloves Unlocked
           </Text>
@@ -490,23 +490,25 @@ export default function StatsScreen() {
             const worked = workoutDatesThisMonth.has(day);
             const isToday = day === calendarData.today;
             return (
-              <View
-                key={day}
-                style={[
-                  styles.calCell,
-                  worked && styles.calCellWorked,
-                  isToday && !worked && styles.calCellToday,
-                  isToday && worked && styles.calCellTodayWorked,
-                ]}
-              >
-                <Text
+              <View key={day} style={styles.calCell}>
+                <View
                   style={[
-                    styles.calCellText,
-                    worked && styles.calCellTextWorked,
+                    styles.calCellInner,
+                    worked && !isToday && styles.calCellInnerWorked,
+                    isToday && !worked && styles.calCellInnerToday,
+                    isToday && worked && styles.calCellInnerTodayWorked,
                   ]}
                 >
-                  {day}
-                </Text>
+                  <Text
+                    style={[
+                      styles.calCellText,
+                      worked && styles.calCellTextWorked,
+                      isToday && !worked && styles.calCellTextToday,
+                    ]}
+                  >
+                    {day}
+                  </Text>
+                </View>
               </View>
             );
           })}
@@ -553,12 +555,13 @@ export default function StatsScreen() {
       )}
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Road to BMF</Text>
+        <Text style={styles.sectionTitle}>Road to BMFK</Text>
       </View>
       <RoadToBMF
         workoutsCompleted={workoutsCompleted}
         prestige={prestige}
         level={currentLevel}
+        currentStreak={currentStreak}
       />
 
       <View style={styles.section}>
@@ -899,12 +902,12 @@ const styles = StyleSheet.create({
   },
   calDayHeaders: {
     flexDirection: 'row',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   calDayHeader: {
     flex: 1,
     textAlign: 'center',
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '600' as const,
     color: colors.dark.mutedForeground,
   },
@@ -914,30 +917,42 @@ const styles = StyleSheet.create({
   },
   calCell: {
     width: '14.28%' as any,
-    aspectRatio: 1,
+    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 4,
+    padding: 2,
   },
-  calCellWorked: {
-    backgroundColor: 'rgba(204, 255, 0, 0.6)',
+  calCellWorked: {},
+  calCellToday: {},
+  calCellTodayWorked: {},
+  calCellInner: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  calCellToday: {
-    borderWidth: 1,
-    borderColor: 'rgba(204, 255, 0, 0.4)',
+  calCellInnerWorked: {
+    backgroundColor: colors.dark.volt,
   },
-  calCellTodayWorked: {
-    backgroundColor: 'rgba(204, 255, 0, 0.6)',
-    borderWidth: 1,
+  calCellInnerToday: {
+    borderWidth: 1.5,
     borderColor: colors.dark.volt,
   },
+  calCellInnerTodayWorked: {
+    backgroundColor: colors.dark.volt,
+  },
   calCellText: {
-    fontSize: 10,
-    fontWeight: '600' as const,
+    fontSize: 12,
+    fontWeight: '500' as const,
     color: colors.dark.mutedForeground,
   },
   calCellTextWorked: {
     color: colors.dark.background,
+    fontWeight: '800' as const,
+  },
+  calCellTextToday: {
+    color: colors.dark.volt,
     fontWeight: '700' as const,
   },
   sessionRow: {
