@@ -1,0 +1,48 @@
+Real results. Let's break this down.
+22 rate-limit failures + 5 malformed JSON = 27 infrastructure issues, not code bugs. Those go away with a retry mechanism and sequential test runner.
+5 real bugs. Here's how to fix each:
+
+Fix 1: FREESTYLE combos for shadowboxing (B1.7, B1.8, B40)
+This is a system prompt gap. KOI Rule 3 says every boxing phase MUST have combos, and mentions FREESTYLE as an option, but doesn't tell the AI when to use it. Add this to Rule 3 in the system prompt:
+
+"When the workout type is shadowboxing and the user has NOT specified combos for each round, use ["FREESTYLE"] as the combo for each round. FREESTYLE means the user does their own thing — do NOT substitute numbered combos. Only generate numbered combos for shadowboxing if the user explicitly requests specific combinations."
+
+Fix 2: Exact combo preservation (B1.2, B8)
+Rule 3 already says user-specified combos override AI. The AI is ignoring it. Strengthen the instruction — add to the system prompt:
+
+"CRITICAL: When the user specifies exact combos per round (e.g. 'Round 1: 1-2, Round 2: 1-2-3'), you MUST use those EXACT combos verbatim. Do NOT substitute, rearrange, or 'improve' user-specified combos. User combos are sacred — copy them exactly."
+
+Fix 3: Duration cap too low (K1.4, K10)
+The auto-repair in aiAutoRepair.ts clamps max duration to 300s. That's correct for boxing rounds but wrong for continuous activities like treadmill runs. Fix the clamping logic:
+typescript// Instead of blanket 300s cap:
+if (segment.segmentType === 'exercise' && isContinuousActivity(segment.name)) {
+  // Allow up to 3600s (60 min) for treadmill, jump rope, rowing, etc.
+  segment.duration = Math.min(Math.max(segment.duration, 10), 3600);
+} else {
+  segment.duration = Math.min(Math.max(segment.duration, 10), 300);
+}
+Where isContinuousActivity checks for keywords like "treadmill", "run", "jog", "row", "bike", "jump rope", "stretching", "foam roll".
+Fix 4: Add single retry on API failures
+In server/routes.ts, wrap the Gemini call in a retry:
+typescriptlet attempts = 0;
+let data = null;
+while (attempts < 2) {
+  try {
+    const response = await fetch(geminiUrl, options);
+    data = await response.json();
+    if (data.candidates?.[0]?.content) break;
+  } catch (e) { /* retry */ }
+  attempts++;
+  if (attempts < 2) await new Promise(r => setTimeout(r, 2000));
+}
+
+Tell Replit:
+
+Fix these 4 issues in the AI Workout Builder:
+
+System prompt Rule 3 — Add: when workout is shadowboxing and user didn't specify combos, use ["FREESTYLE"] for each round. Don't substitute numbered combos.
+System prompt Rule 3 — Add stronger instruction: when user specifies exact combos per round, use them EXACTLY verbatim. Never substitute or modify user-specified combos.
+aiAutoRepair.ts duration clamping — The 300s max cap is too low for continuous activities like treadmill runs. Allow up to 3600s for continuous activities (treadmill, run, jog, bike, rowing, jump rope, stretching, foam rolling). Keep 300s cap for boxing rounds.
+server/routes.ts — Add a single retry with 2-second delay when Gemini returns an error or invalid JSON before falling back to the regex parser.
+
+After fixing, re-run the full A–N test suite.
