@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import colors from '@/constants/colors';
@@ -19,6 +20,7 @@ import { useWorkoutStore } from '@/stores/workoutStore';
 import { useTimerStore } from '@/stores/timerStore';
 import { useHistoryStore } from '@/stores/historyStore';
 import { useBadgeStore } from '@/stores/badgeStore';
+import { useGloveStore } from '@/stores/gloveStore';
 import { generateLoadoutWorkout, UserEquipmentConfig } from '@/lib/loadoutGenerator';
 import { formatDuration } from '@/lib/utils';
 import { generateId } from '@/lib/utils';
@@ -154,22 +156,41 @@ export default function SettingsScreen() {
     );
   };
 
+  const handleSignOut = () => {
+    Alert.alert(
+      'Sign Out',
+      'This will sign you out and return you to the start. Your workout data will be kept.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Sign Out',
+          style: 'destructive',
+          onPress: () => {
+            useUserStore.setState({ user: null, hasCompletedOnboarding: false });
+            router.replace('/onboarding');
+          },
+        },
+      ]
+    );
+  };
+
   const handleResetData = () => {
     Alert.alert(
       'Reset All Data',
-      'This will erase all your workouts, history, badges, and profile. This cannot be undone.',
+      'This will permanently erase your profile, workouts, history, and badges. This cannot be undone.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Reset Everything',
           style: 'destructive',
-          onPress: () => {
-            setUser(null);
-            useUserStore.setState({ hasCompletedOnboarding: false });
-            useWorkoutStore.setState({ workouts: [], archivedWorkouts: [] });
+          onPress: async () => {
+            useUserStore.setState({ user: null, hasCompletedOnboarding: false });
+            useWorkoutStore.setState({ workouts: [], archivedWorkouts: [], presetsLoaded: false });
             useHistoryStore.setState({ completedWorkouts: [] });
             useBadgeStore.setState({ earnedBadgeIds: [] });
+            useGloveStore.setState({ equippedGlove: 'default' });
             useTimerStore.getState().resetTimer();
+            await AsyncStorage.removeItem('get-clocked-presets-seeded');
             router.replace('/onboarding');
           },
         },
@@ -420,6 +441,23 @@ export default function SettingsScreen() {
             </View>
           </View>
         )}
+
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="person" size={18} color={colors.dark.volt} />
+            <Text style={styles.sectionTitle}>Account</Text>
+          </View>
+          <TouchableOpacity style={styles.actionCard} onPress={handleSignOut}>
+            <Ionicons name="log-out-outline" size={20} color={colors.dark.foreground} />
+            <View style={styles.actionTextContainer}>
+              <Text style={styles.actionTitle}>Sign Out</Text>
+              <Text style={styles.actionDescription}>
+                Return to start — your workout data is kept
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.dark.mutedForeground} />
+          </TouchableOpacity>
+        </View>
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
