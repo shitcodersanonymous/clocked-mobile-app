@@ -97,8 +97,8 @@ FREESTYLE OPTION: A combo entry can be ["FREESTYLE"] instead of punch tokens. Th
 
 CRITICAL — EXACT COMBO PRESERVATION: When the user specifies exact combos per round (e.g. "Round 1: 1-2, Round 2: 1-2-3" or "Round 1: 1-2-7"), you MUST use those EXACT combos verbatim, converted to token arrays. Do NOT substitute, rearrange, improve, or add defense moves to user-specified combos. User combos are sacred — copy them exactly as given.
 
-### RULE 3a: SHADOWBOXING WITHOUT SPECIFIED COMBOS
-When the workout type is shadowboxing and the user has NOT specified combos per round, you MUST use ["FREESTYLE"] as the combo for every round. Do NOT generate numbered combos as a substitute. Only use numbered combos for shadowboxing if the user explicitly requests specific combinations or a specific focus (e.g. "shadowboxing focusing on hooks").
+### RULE 3a: FREESTYLE ROUNDS
+When the user says "freestyle", "no combos", "all freestyle", or "do your own thing" for ANY phase (shadowboxing OR heavy bag OR double end bag), you MUST use ["FREESTYLE"] as the combo for every round in that phase. Do NOT generate numbered combos as a substitute. This applies to ALL segment types, not just shadowboxing. Only generate numbered combos if the user explicitly requests specific combinations or a specific focus (e.g. "shadowboxing focusing on hooks").
 
 ### RULE 4: WARMUP & COOLDOWN ARE OPTIONAL
 Only include warmup/cooldown if the user asks for it or the prompt implies a full session.
@@ -166,6 +166,7 @@ Generate diverse, realistic combinations:
 - IMPORTANT — PROGRESSIVE DIFFICULTY: Combos MUST get harder as the workout progresses. Start with simpler, shorter combos in early rounds and build to longer, more complex combos in later rounds. Round 1 might be a simple 1-2, while the last round could be a full-length combo with defense. This applies to ALL tiers — even beginners start simple and progress within their allowed punch range.
 - Include natural power sequences: "1","2" (jab-cross), "3","2" (hook-cross), "5","2" (uppercut-cross), etc.
 - The progressive difficulty and combo variety rules apply equally to shadowboxing phases with numbered combos. Every combo in a phase MUST be unique — never repeat the same combo twice in a single phase. If the user requests a focus (e.g. "hooks", "defense"), generate varied combos built around that focus, not the same combo repeated.
+- Beginner combo variety examples (punches 1-4 only, length 2-4): Round 1: ["1","2"] / Round 2: ["1","1","2"] / Round 3: ["1","2","3"] / Round 4: ["3","2"] / Round 5: ["1","2","3","2"]. Every combo in a phase MUST be different from every other combo. Never repeat the same combo twice in one workout.
 
 ### RULE 12: ROUND-BASED STRUCTURE FOR BOXING & CONDITIONING
 When the user requests a boxing, shadowboxing, or conditioning workout:
@@ -181,6 +182,7 @@ EXCEPTION — single long segments ARE valid for continuous activities:
 - Static stretching / foam rolling (e.g., 5-10 min)
 - Plank holds or single exercise endurance (e.g., 3 min plank)
 - Any activity where continuous unbroken duration makes sense
+- Example: "30 min treadmill run" → 1 phase, 1 segment, duration: 1800. "20 min jump rope" → 1 phase, 1 segment, duration: 1200. Do NOT cap continuous activities at 300s. Match the user's requested duration exactly in seconds.
 
 Rule of thumb: if the segment involves combos or boxing technique, use rounds. If it's continuous cardio/stretch/hold, long durations are fine.
 
@@ -260,13 +262,25 @@ interface GenerateRequest {
   };
 }
 
-function buildUserMessage(req: GenerateRequest): string {
-  const equipmentList = Object.entries(req.equipment || {})
-    .filter(([_, has]) => has)
-    .map(([name]) => name)
-    .join(', ') || 'none';
+const EQUIPMENT_LABELS: Record<string, string> = {
+  gloves: 'gloves',
+  wraps: 'hand wraps',
+  heavyBag: 'heavy bag',
+  speedBag: 'speed bag',
+  doubleEndBag: 'double end bag',
+  jumpRope: 'jump rope',
+  treadmill: 'treadmill',
+};
 
-  let context = `Tier: ${req.userTier}\nEquipment: ${equipmentList}\nExperience: ${req.experienceLevel}`;
+function buildUserMessage(req: GenerateRequest): string {
+  const eq = req.equipment || {};
+  const equipmentLines = Object.entries(EQUIPMENT_LABELS)
+    .map(([key, label]) => `  ${label}: ${eq[key] ? 'YES' : 'NO'}`)
+    .join('\n');
+
+  const equipmentBlock = `Equipment available:\n${equipmentLines}\nIMPORTANT: Only use equipment marked YES. Never output a segmentType that requires equipment marked NO.`;
+
+  let context = `Tier: ${req.userTier}\nExperience: ${req.experienceLevel}\n${equipmentBlock}`;
 
   if (req.historyInsights && req.historyInsights.totalWorkouts > 0) {
     const h = req.historyInsights;
