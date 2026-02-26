@@ -32,7 +32,10 @@ export function validateParsedResult(result: any): { valid: boolean; errors: str
     }
 
     for (const seg of (phase.segments || [])) {
-      if (seg.duration < 5 || seg.duration > 600) {
+      const segNameLc = (seg.name || '').toLowerCase();
+      const isContinuousSeg = ['treadmill','run','jog','row','bike','cycling','jump rope','skipping','stretching','foam roll','yoga','walk','plank'].some(k => segNameLc.includes(k));
+      const maxDur = isContinuousSeg ? 3600 : 600;
+      if (seg.duration < 5 || seg.duration > maxDur) {
         errors.push(`Segment "${seg.name}" has invalid duration: ${seg.duration}s`);
       }
       if (seg.type === 'active' && !seg.segmentType) {

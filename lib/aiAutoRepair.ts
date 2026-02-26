@@ -5,6 +5,19 @@ const VALID_BOXING_TOKENS = new Set([
   'FREESTYLE'
 ]);
 
+const BEGINNER_COMBO_POOL: string[][] = [
+  ['1','2'],
+  ['1','1','2'],
+  ['3','2'],
+  ['1','2','3'],
+  ['1','2','1'],
+  ['2','3','2'],
+  ['1','2','3','2'],
+  ['3','4','2'],
+  ['1','3','2'],
+  ['4','2','1','2'],
+];
+
 function splitHyphenCombo(token: string): string[] {
   return token.split('-').map(t => t.trim()).filter(t => t.length > 0);
 }
@@ -29,7 +42,30 @@ export function autoRepairCombos(combos: any[]): string[][] {
   }).filter(combo => combo.length > 0);
 }
 
-export function autoRepair(result: any): any {
+function allCombosIdentical(combos: string[][]): boolean {
+  if (combos.length < 2) return false;
+  const first = JSON.stringify(combos[0]);
+  return combos.every(c => JSON.stringify(c) === first);
+}
+
+function diversifyBeginnerCombos(combos: string[][], count: number): string[][] {
+  const pool = BEGINNER_COMBO_POOL.slice();
+  const result: string[][] = [];
+  let poolIdx = 0;
+  for (let i = 0; i < count; i++) {
+    result.push(pool[poolIdx % pool.length]);
+    poolIdx++;
+  }
+  return result;
+}
+
+export interface RepairContext {
+  equipment?: Record<string, boolean>;
+  prompt?: string;
+  tier?: string;
+}
+
+export function autoRepair(result: any, ctx?: RepairContext): any {
   if (!result.megasetRepeats || result.megasetRepeats < 1) result.megasetRepeats = 1;
 
   if (!result.tags) result.tags = [];
@@ -83,6 +119,65 @@ export function autoRepair(result: any): any {
         seg.segmentType = 'rest';
       }
     }
+  }
+
+  const promptLower = (ctx?.prompt || '').toLowerCase();
+  const hasPerRoundAssignments = /round\s*\d+\s*:/i.test(ctx?.prompt || '');
+  const hasFreestylePrompt = /freestyle|no combos|no specific combos|all freestyle|do your own thing/.test(promptLower) && !hasPerRoundAssignments;
+  const eq = ctx?.equipment || {};
+  const tier = (ctx?.tier || '').toLowerCase();
+
+  const perRoundFreestyleIndices: number[] = [];
+  const roundFreestyleRe = /round\s*(\d+)\s*:\s*freestyle/gi;
+  let rfMatch;
+  while ((rfMatch = roundFreestyleRe.exec(ctx?.prompt || '')) !== null) {
+    perRoundFreestyleIndices.push(parseInt(rfMatch[1]) - 1);
+  }
+
+  for (const phase of (result.phases || [])) {
+    if (!phase.combos || !Array.isArray(phase.combos)) continue;
+
+    const seg = phase.segments?.find((s: any) => s.type === 'active');
+    const segType: string = seg?.segmentType || '';
+    const boxingSegment = ['combo','shadowboxing','doubleend','sparring'].includes(segType);
+
+    if (hasFreestylePrompt && boxingSegment) {
+      phase.combos = phase.combos.map(() => ['FREESTYLE']);
+    }
+
+    if (perRoundFreestyleIndices.length > 0 && boxingSegment) {
+      for (const idx of perRoundFreestyleIndices) {
+        if (idx < phase.combos.length) {
+          phase.combos[idx] = ['FREESTYLE'];
+        }
+      }
+    }
+
+    if (segType === 'speedbag' && !eq.speedBag) {
+      if (seg) seg.segmentType = 'shadowboxing';
+    }
+    if (segType === 'doubleend' && !eq.doubleEndBag) {
+      if (seg) seg.segmentType = 'shadowboxing';
+    }
+
+    if (!hasFreestylePrompt && boxingSegment && allCombosIdentical(phase.combos)) {
+      if (tier === 'beginner') {
+        phase.combos = diversifyBeginnerCombos(phase.combos, phase.combos.length);
+      } else {
+        const first = JSON.stringify(phase.combos[0]);
+        const alt = BEGINNER_COMBO_POOL.find(c => JSON.stringify(c) !== first);
+        if (alt) {
+          for (let i = 1; i < phase.combos.length; i++) {
+            phase.combos[i] = BEGINNER_COMBO_POOL[i % BEGINNER_COMBO_POOL.length];
+          }
+        }
+      }
+    }
+  }
+
+  if (result.combos && Array.isArray(result.combos) && result.combos.length > 0) {
+    const grindPhase = result.phases?.find((p: any) => p.section === 'grind');
+    if (grindPhase?.combos) result.combos = grindPhase.combos;
   }
 
   return result;

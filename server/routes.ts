@@ -97,8 +97,10 @@ FREESTYLE OPTION: A combo entry can be ["FREESTYLE"] instead of punch tokens. Th
 
 CRITICAL — EXACT COMBO PRESERVATION: When the user specifies exact combos per round (e.g. "Round 1: 1-2, Round 2: 1-2-3" or "Round 1: 1-2-7"), you MUST use those EXACT combos verbatim, converted to token arrays. Do NOT substitute, rearrange, improve, or add defense moves to user-specified combos. User combos are sacred — copy them exactly as given.
 
+CRITICAL — ROUND-SPECIFIC FREESTYLE: When a specific round is labeled "freestyle" (e.g. "Round 2: freestyle"), output ["FREESTYLE"] as the combo for that round and ONLY that round. Other rounds keep their specified combos. Example: "Round 1: 1-2-3. Round 2: freestyle. Round 3: 1-2-3-6-3-2" → combos: [["1","2","3"], ["FREESTYLE"], ["1","2","3","6","3","2"]].
+
 ### RULE 3a: FREESTYLE ROUNDS
-When the user says "freestyle", "no combos", "all freestyle", or "do your own thing" for ANY phase (shadowboxing OR heavy bag OR double end bag), you MUST use ["FREESTYLE"] as the combo for every round in that phase. Do NOT generate numbered combos as a substitute. This applies to ALL segment types, not just shadowboxing. Only generate numbered combos if the user explicitly requests specific combinations or a specific focus (e.g. "shadowboxing focusing on hooks").
+When the user says "freestyle", "no combos", "all freestyle", "no specific combos", or "do your own thing" for an entire phase (not per-round), use ["FREESTYLE"] as the combo for EVERY round in that phase. Do NOT generate numbered combos as a substitute. This applies to ALL segment types (shadowboxing, heavy bag, double end bag).
 
 ### RULE 4: WARMUP & COOLDOWN ARE OPTIONAL
 Only include warmup/cooldown if the user asks for it or the prompt implies a full session.
@@ -154,10 +156,12 @@ HARD RULE — EQUIPMENT ENFORCEMENT: If the user's equipment list does NOT inclu
 
 ### RULE 10: DIFFICULTY OVERRIDE
 If user explicitly says "beginner", "advanced", etc. in their prompt, use that difficulty — even if their tier is different. "3 rounds heavy bag, beginner level" from an advanced user = beginner combos.
+CRITICAL — When difficulty is overridden, the PUNCH RANGE follows the overridden difficulty, NOT the user's tier. A beginner user with an "advanced" override gets punches 1-8 and combo lengths 4-8. A pro user with a "beginner" override gets punches 1-4 and combo lengths 2-4. The punch range is determined by the difficulty value, not the user's account tier.
 
 ### RULE 11: COMBO VARIETY, QUALITY & PROGRESSION
 Generate diverse, realistic combinations:
-- Vary openers — any punch 1-8 is a valid opener (respecting tier punch limits). Don't start every combo the same way.
+- Vary openers — any punch 1-8 is a valid opener (respecting tier punch limits). NEVER start every combo with the same punch. For advanced sessions, openers MUST be varied across combos: some starting with 1, some with 2, some with 3, some with 5 or 6. If every combo starts with 1, that's a mistake.
+- Include movement tokens (CIRCLE L, CIRCLE R, PIVOT, STEP IN, STEP OUT) in at least 2 combos per advanced/pro phase. Movement breaks up the combination and is essential for realistic advanced boxing.
 - Vary combo lengths within a workout — not all combos should be the same length. Combo lengths must respect the tier:
   - Beginner: 2-4 tokens max
   - Intermediate: 3-5 tokens max
@@ -167,6 +171,8 @@ Generate diverse, realistic combinations:
 - Include natural power sequences: "1","2" (jab-cross), "3","2" (hook-cross), "5","2" (uppercut-cross), etc.
 - The progressive difficulty and combo variety rules apply equally to shadowboxing phases with numbered combos. Every combo in a phase MUST be unique — never repeat the same combo twice in a single phase. If the user requests a focus (e.g. "hooks", "defense"), generate varied combos built around that focus, not the same combo repeated.
 - Beginner combo variety examples (punches 1-4 only, length 2-4): Round 1: ["1","2"] / Round 2: ["1","1","2"] / Round 3: ["1","2","3"] / Round 4: ["3","2"] / Round 5: ["1","2","3","2"]. Every combo in a phase MUST be different from every other combo. Never repeat the same combo twice in one workout.
+- Advanced/Pro with 6+ rounds: You MUST use punches 7 and 8 in later rounds. Punches 5 (lead uppercut), 6 (rear uppercut), 7 (lead hook to body), 8 (rear hook to body) are essential for advanced workouts. You MUST also include defense tokens (DUCK, PULL, SLIP L/R) in at least 2 combos per phase. Example advanced 8-round phase should have combos using 5, 6, 7, 8 punches and defense moves like DUCK or PULL.
+- Prompt signals like "give me everything you got", "lets go hard", "all out", "max effort", "beast mode", or "push me" for advanced/pro users means: 5-8 round grind phase with long durations (180-300s), hard combos using full punch range (1-8), and 60-90s rest. NEVER output fewer than 5 rounds for these prompts.
 
 ### RULE 12: ROUND-BASED STRUCTURE FOR BOXING & CONDITIONING
 When the user requests a boxing, shadowboxing, or conditioning workout:
@@ -314,7 +320,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let parsed: any = null;
       let lastError = '';
 
-      for (let attempt = 0; attempt < 2; attempt++) {
+      for (let attempt = 0; attempt < 3; attempt++) {
         if (attempt > 0) {
           console.log('[KOI] Retrying after 2s...');
           await new Promise(r => setTimeout(r, 2000));
@@ -357,6 +363,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
           parsed = JSON.parse(jsonStr);
           break;
         } catch (e) {
+          let repaired = jsonStr;
+          repaired = repaired.replace(/,\s*([\]}])/g, '$1');
+          const lastBrace = Math.max(repaired.lastIndexOf('}'), repaired.lastIndexOf(']'));
+          if (lastBrace !== -1 && lastBrace < repaired.length - 1) {
+            repaired = repaired.substring(0, lastBrace + 1);
+          }
+          const openBraces = (repaired.match(/\{/g) || []).length;
+          const closeBraces = (repaired.match(/\}/g) || []).length;
+          if (openBraces > closeBraces) {
+            repaired += '}'.repeat(openBraces - closeBraces);
+          }
+          try {
+            parsed = JSON.parse(repaired);
+            console.log(`[KOI] JSON repaired on attempt ${attempt + 1}`);
+            break;
+          } catch (_) {}
           console.error(`[KOI] JSON parse error (attempt ${attempt + 1}):`, e, 'Raw:', rawText.substring(0, 200));
           lastError = 'Invalid JSON from AI';
         }
@@ -366,7 +388,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(422).json({ error: lastError || 'AI generation failed', fallback: true });
       }
 
-      parsed = autoRepair(parsed);
+      parsed = autoRepair(parsed, { equipment: body.equipment, prompt: body.prompt, tier: body.userTier });
 
       const { valid, errors } = validateParsedResult(parsed);
       if (!valid) {
