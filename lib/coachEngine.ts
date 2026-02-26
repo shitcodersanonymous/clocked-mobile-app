@@ -145,7 +145,7 @@ export function generateCoachRecommendation(
     return applyZeroHistory(rec, profile);
   }
 
-  applyC1DifficultyCalibration(rec, history, insights, tier);
+  const diffAnchored = applyC1DifficultyCalibration(rec, history, insights, tier);
   applyC2TrendDetection(rec, insights);
   applyC3RoundFeedback(rec, insights);
   applyC4PunchDistribution(rec, profile, tier);
@@ -157,6 +157,13 @@ export function generateCoachRecommendation(
   applyC10GoalAlignment(rec, profile);
   applyC11NotesParsing(rec, history);
   applyC12Confidence(rec, history, profile);
+
+  if (diffAnchored) {
+    const maxDiff = mapTierToDifficulty(tier);
+    if (DIFFICULTY_TIERS.indexOf(rec.suggestedDifficulty) < DIFFICULTY_TIERS.indexOf(maxDiff)) {
+      rec.suggestedDifficulty = maxDiff;
+    }
+  }
 
   applyEquipmentConstraints(rec, profile);
 
@@ -178,12 +185,12 @@ function applyC1DifficultyCalibration(
   history: WorkoutHistoryEntry[],
   insights: HistoryInsights,
   tier: string,
-) {
+): boolean {
   const recent = history.slice(0, 10);
   const withDifficulty = recent.filter(w => w.difficulty);
 
   if (withDifficulty.length === 0) {
-    return;
+    return false;
   }
 
   const tooEasy = withDifficulty.filter(w => w.difficulty === 'too_easy').length;
@@ -204,7 +211,10 @@ function applyC1DifficultyCalibration(
       rec.suggestedRounds = Math.min(rec.suggestedRounds + 1, 12);
       rec.suggestedRestDuration = Math.round(rec.suggestedRestDuration * 0.85);
     }
+    return true;
   }
+
+  return false;
 }
 
 /** C2: Detects difficulty trends across recent sessions and adjusts accordingly. */
@@ -668,7 +678,7 @@ export function recommendationToPrompt(rec: CoachRecommendation): string {
   if (rec.workoutType === 'boxing') prompt += ' heavy bag';
   else if (rec.workoutType === 'shadowboxing') prompt += ' shadowboxing';
   else if (rec.workoutType === 'conditioning') prompt += ' conditioning';
-  else if (rec.workoutType === 'mixed') prompt += ' mixed';
+  else if (rec.workoutType === 'mixed') prompt += ' mixed boxing';
   else if (rec.workoutType === 'recovery') prompt += ' light shadowboxing';
 
   prompt += `, ${rec.suggestedRoundDuration / 60} min rounds`;
