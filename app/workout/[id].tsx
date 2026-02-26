@@ -112,8 +112,6 @@ export default function WorkoutSessionScreen() {
   const [difficultyRating, setDifficultyRating] = useState<'too_easy' | 'just_right' | 'too_hard' | null>(null);
   const [levelUpLevel, setLevelUpLevel] = useState<number | null>(null);
   const [sessionResult, setSessionResult] = useState<SessionXPBreakdown | null>(null);
-  const [roundFeedbacks, setRoundFeedbacks] = useState<Record<number, 'easy' | 'perfect' | 'hard'>>({});
-
   const [liveBadgesEarned, setLiveBadgesEarned] = useState<Array<{ badge: Badge; earnedAt: number }>>([]);
   const [latestBadgePop, setLatestBadgePop] = useState<{ badge: Badge; id: number } | null>(null);
   const [comboXPPop, setComboXPPop] = useState<{ amount: number; id: number; isChampionship?: boolean } | null>(null);
@@ -768,10 +766,6 @@ export default function WorkoutSessionScreen() {
           displayCombo={displayCombo}
           isShadowboxing={isShadowboxing && !isRestSegment}
           accentColor={accentColor}
-          roundFeedbacks={roundFeedbacks}
-          onRoundFeedback={(round, rating) =>
-            setRoundFeedbacks((prev) => ({ ...prev, [round]: rating }))
-          }
         />
       </View>
 

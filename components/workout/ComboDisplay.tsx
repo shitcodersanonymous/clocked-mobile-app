@@ -2,7 +2,7 @@
  * ComboDisplay — Center-card content for the workout session screen.
  *
  * Renders one of three states based on the current segment:
- *   1. REST card  — "UP NEXT: [next segment name]" when resting + optional RoundFeedbackPanel
+ *   1. REST card  — "UP NEXT: [next segment name]" when resting
  *   2. COMBO card — punch/defense/movement move chips when a combo is assigned
  *   3. FREESTYLE  — "FREESTYLE" heading when active boxing with no assigned combo
  *
@@ -14,7 +14,6 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import colors from '@/constants/colors';
-import RoundFeedbackPanel from '@/components/workout/RoundFeedbackPanel';
 import { FlatSegment } from '@/hooks/useWorkoutTimer';
 
 // ─── Move helpers ─────────────────────────────────────────────────────────────
@@ -60,8 +59,6 @@ interface ComboDisplayProps {
   displayCombo?: string[];
   isShadowboxing: boolean;
   accentColor: string;
-  roundFeedbacks: Record<number, 'easy' | 'perfect' | 'hard'>;
-  onRoundFeedback: (round: number, rating: 'easy' | 'perfect' | 'hard') => void;
 }
 
 export default function ComboDisplay({
@@ -71,8 +68,6 @@ export default function ComboDisplay({
   displayCombo,
   isShadowboxing,
   accentColor,
-  roundFeedbacks,
-  onRoundFeedback,
 }: ComboDisplayProps) {
   return (
     <>
@@ -82,18 +77,6 @@ export default function ComboDisplay({
           <Text style={[styles.comboCardTitle, { color: accentColor }]}>
             {nextSegment.name || 'FINISH'}
           </Text>
-        </View>
-      )}
-
-      {isRestSegment &&
-        currentSegment?.section === 'grind' &&
-        currentSegment?.cumulativeRound != null &&
-        !roundFeedbacks[currentSegment.cumulativeRound] && (
-        <View style={{ width: '100%', maxWidth: 300, marginTop: 12 }}>
-          <RoundFeedbackPanel
-            roundNumber={currentSegment.cumulativeRound}
-            onRate={(rating) => onRoundFeedback(currentSegment.cumulativeRound!, rating)}
-          />
         </View>
       )}
 
