@@ -283,38 +283,36 @@ export default function StatsScreen() {
           {earnedBadgeIds.length} / {TOTAL_BADGE_COUNT}
         </Text>
       </View>
-      <View style={styles.badgeGrid}>
-        {badgeSummary.slice(0, 7).map(({ category, total, earned }) => {
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.badgeScroll}
+        style={styles.badgeScrollWrap}
+      >
+        {badgeSummary.map(({ category, total, earned }) => {
           const catColors = BADGE_CATEGORY_COLORS_NATIVE[category] || {
             bg: colors.dark.surface2,
             text: colors.dark.volt,
           };
+          const pct = total > 0 ? (earned / total) * 100 : 0;
           return (
-            <View
-              key={category}
-              style={[styles.badgeCatCard, { backgroundColor: catColors.bg }]}
-            >
-              <Text style={[styles.badgeCatCount, { color: catColors.text }]}>
-                {earned}
-              </Text>
-              <Text style={styles.badgeCatLabel}>
+            <View key={category} style={[styles.badgePill, { backgroundColor: catColors.bg }]}>
+              <View style={styles.badgePillTop}>
+                <View style={[styles.badgePillDot, { backgroundColor: catColors.text }]} />
+                <Text style={[styles.badgePillCount, { color: catColors.text }]}>
+                  {earned}/{total}
+                </Text>
+              </View>
+              <Text style={styles.badgePillLabel} numberOfLines={2}>
                 {ALL_BADGE_CATEGORY_NAMES[category] || category}
               </Text>
-              <View style={styles.badgeCatBarBg}>
-                <View
-                  style={[
-                    styles.badgeCatBarFill,
-                    {
-                      backgroundColor: catColors.text,
-                      width: `${total > 0 ? (earned / total) * 100 : 0}%` as any,
-                    },
-                  ]}
-                />
+              <View style={styles.badgePillBarBg}>
+                <View style={[styles.badgePillBarFill, { width: `${pct}%` as any, backgroundColor: catColors.text }]} />
               </View>
             </View>
           );
         })}
-      </View>
+      </ScrollView>
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Progress</Text>
@@ -719,40 +717,52 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
     color: colors.dark.volt,
   },
-  badgeGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
+  badgeScrollWrap: {
+    marginHorizontal: -16,
     marginBottom: 16,
   },
-  badgeCatCard: {
+  badgeScroll: {
+    paddingHorizontal: 16,
+    gap: 8,
+    paddingBottom: 2,
+  },
+  badgePill: {
+    width: 80,
     borderRadius: 12,
     padding: 10,
+    justifyContent: 'space-between',
+  },
+  badgePillTop: {
+    flexDirection: 'row',
     alignItems: 'center',
-    width: '30%' as any,
-    flexGrow: 1,
-    minWidth: 80,
+    gap: 5,
+    marginBottom: 4,
   },
-  badgeCatCount: {
-    fontSize: 20,
-    fontWeight: '800' as const,
+  badgePillDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
-  badgeCatLabel: {
+  badgePillCount: {
+    fontSize: 11,
+    fontWeight: '700' as const,
+  },
+  badgePillLabel: {
     fontSize: 9,
     color: colors.dark.mutedForeground,
-    marginTop: 2,
     textTransform: 'uppercase',
     letterSpacing: 0.3,
+    lineHeight: 11,
+    marginBottom: 6,
+    flexShrink: 1,
   },
-  badgeCatBarBg: {
+  badgePillBarBg: {
     height: 3,
     borderRadius: 2,
     backgroundColor: 'rgba(255,255,255,0.1)',
-    width: '100%',
-    marginTop: 6,
     overflow: 'hidden',
   },
-  badgeCatBarFill: {
+  badgePillBarFill: {
     height: '100%',
     borderRadius: 2,
   },
