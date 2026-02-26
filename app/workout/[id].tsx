@@ -224,9 +224,11 @@ export default function WorkoutSessionScreen() {
 
   const liveLevel = getLevelFromXP(prestige, (user?.totalXP || 0) + accumulatedXP);
 
-  const isShadowboxing = currentSegment?.segmentType === 'shadowboxing' ||
-    currentSegment?.name.toLowerCase().includes('shadow') ||
-    currentSegment?.name.toLowerCase().includes('technique');
+  const isShadowboxing = !!(
+    currentSegment?.segmentType === 'shadowboxing' ||
+    currentSegment?.name?.toLowerCase().includes('shadow') ||
+    currentSegment?.name?.toLowerCase().includes('technique')
+  );
   const isSpeedbag = currentSegment?.segmentType === 'speedbag';
   const isDoubleend = currentSegment?.segmentType === 'doubleend';
   const rawCombo = (isSpeedbag || isDoubleend)

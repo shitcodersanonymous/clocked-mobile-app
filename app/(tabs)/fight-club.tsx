@@ -64,7 +64,7 @@ export default function FightClubScreen() {
   const feedPosts = useMemo(() => {
     return completedWorkouts.slice(0, 20).map((w) => ({
       id: w.id,
-      userName: user?.displayName || "You",
+      userName: user?.name || "You",
       message: `Completed "${w.workoutName}" — ${Math.round(w.duration / 60)}m, +${w.xpEarned.toLocaleString()} XP`,
       timeAgo: formatRelativeDate(w.completedAt),
       xp: w.xpEarned,

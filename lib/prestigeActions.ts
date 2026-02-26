@@ -83,11 +83,12 @@ export function executePrestige(currentPrestige: Prestige): void {
   const newWorkout: Workout = {
     id: generateId(),
     name: generated.name,
-    description: generated.description,
+    icon: 'fitness',
     difficulty: generated.difficulty as Workout['difficulty'],
     totalDuration: generated.duration,
     isPreset: false,
     isArchived: false,
+    createdAt: new Date().toISOString(),
     timesCompleted: 0,
     sections: {
       warmup: generated.phases.filter((p) => p.section === 'warmup'),

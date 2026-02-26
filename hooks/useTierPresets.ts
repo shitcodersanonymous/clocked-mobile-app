@@ -71,11 +71,12 @@ export function useTierPresets(): { presets: TierPresetWorkout[]; userTier: Pres
         return {
           id: `tier-preset-${tier}`,
           name: generated.name,
-          description: generated.description,
+          icon: 'fitness',
           difficulty: generated.difficulty as Workout['difficulty'],
           totalDuration: generated.duration,
           isPreset: true,
           isArchived: false,
+          createdAt: new Date().toISOString(),
           timesCompleted: 0,
           sections: {
             warmup: generated.phases.filter((p) => p.section === 'warmup'),

@@ -1,12 +1,17 @@
 /**
  * Sound Effects & Haptic Feedback System (Native — iOS/Android)
  * Uses expo-av for audio + expo-haptics for haptic feedback.
+ *
+ * NOTE: This file intentionally does NOT import from stores/userStore.
+ * Importing useUserStore here would create a circular dependency:
+ *   userStore → useSoundEffects → userStore
+ * which causes useUserStore to be undefined at module load on native (require cycle).
+ * Callers that need soundEnabled gating should check the preference themselves.
  */
 
 import { useCallback } from 'react';
 import { Audio } from 'expo-av';
 import * as Haptics from 'expo-haptics';
-import { useUserStore } from '@/stores/userStore';
 
 type SoundType = 'xp' | 'levelUp' | 'prestige' | 'warning';
 
@@ -101,14 +106,10 @@ export const playSoundEffect = {
 };
 
 export function useSoundEffects() {
-  const soundEnabled = useUserStore(
-    (state) => (state.user?.preferences as any)?.soundEnabled !== false
-  );
-
-  const playXP = useCallback(() => { if (soundEnabled) playSoundEffect.xp(); }, [soundEnabled]);
-  const playLevelUp = useCallback(() => { if (soundEnabled) playSoundEffect.levelUp(); }, [soundEnabled]);
-  const playPrestige = useCallback(() => { if (soundEnabled) playSoundEffect.prestige(); }, [soundEnabled]);
-  const playWarning = useCallback(() => { if (soundEnabled) playSoundEffect.warning(); }, [soundEnabled]);
+  const playXP = useCallback(() => { playSoundEffect.xp(); }, []);
+  const playLevelUp = useCallback(() => { playSoundEffect.levelUp(); }, []);
+  const playPrestige = useCallback(() => { playSoundEffect.prestige(); }, []);
+  const playWarning = useCallback(() => { playSoundEffect.warning(); }, []);
 
   return { playXP, playLevelUp, playPrestige, playWarning };
 }
