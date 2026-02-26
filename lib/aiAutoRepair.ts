@@ -65,6 +65,42 @@ export interface RepairContext {
   tier?: string;
 }
 
+function collapseInlineRepeats(phase: any): void {
+  const segs: any[] = phase.segments || [];
+  if (phase.repeats > 1 || segs.length < 4) return;
+
+  const activeSegs = segs.filter((s: any) => s.type === 'active');
+  const restSegs = segs.filter((s: any) => s.type === 'rest');
+  if (activeSegs.length < 2 || restSegs.length < 2) return;
+  if (activeSegs.length !== restSegs.length) return;
+
+  const firstActiveDur = activeSegs[0]?.duration;
+  const firstRestDur = restSegs[0]?.duration;
+  const allActiveSame = activeSegs.every((s: any) => Math.abs(s.duration - firstActiveDur) < 5);
+  const allRestSame = restSegs.every((s: any) => Math.abs(s.duration - firstRestDur) < 5);
+  if (!allActiveSame || !allRestSame) return;
+
+  const types: string[] = segs.map((s: any) => s.type);
+  const n = activeSegs.length;
+  const isAlternating = types.every((t: string, i: number) =>
+    i % 2 === 0 ? t === 'active' : t === 'rest'
+  );
+  const isBlockedActiveFirst =
+    types.slice(0, n).every((t: string) => t === 'active') &&
+    types.slice(n).every((t: string) => t === 'rest');
+  const isBlockedRestFirst =
+    types.slice(0, n).every((t: string) => t === 'rest') &&
+    types.slice(n).every((t: string) => t === 'active');
+
+  if (!isAlternating && !isBlockedActiveFirst && !isBlockedRestFirst) return;
+
+  phase.repeats = n;
+  phase.segments = [
+    { ...activeSegs[0] },
+    { ...restSegs[0] },
+  ];
+}
+
 export function autoRepair(result: any, ctx?: RepairContext): any {
   if (!result.megasetRepeats || result.megasetRepeats < 1) result.megasetRepeats = 1;
 
@@ -89,6 +125,7 @@ export function autoRepair(result: any, ctx?: RepairContext): any {
   }
 
   for (const phase of (result.phases || [])) {
+    collapseInlineRepeats(phase);
     if (!phase.repeats || phase.repeats < 1) phase.repeats = 1;
     if (!phase.comboOrder) phase.comboOrder = 'sequential';
 

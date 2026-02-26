@@ -192,6 +192,13 @@ EXCEPTION — single long segments ARE valid for continuous activities:
 
 Rule of thumb: if the segment involves combos or boxing technique, use rounds. If it's continuous cardio/stretch/hold, long durations are fine.
 
+### RULE 12a: TABATA / EMOM / INTERVAL FORMAT
+When user requests Tabata, EMOM, interval training, or any repeating cycle format:
+- ALWAYS use the repeats model: one phase with repeats=N, segments=[{active Xs}, {rest Ys}]
+- "Tabata boxing, 8 rounds" → 1 phase, repeats: 8, segments: [active 20s, rest 10s]
+- "EMOM 10 minutes" → 1 phase, repeats: 10, segments: [active 40-50s, rest 10-20s]
+- NEVER build inline segment pairs (8 active + 8 rest segments in 1 phase). The timer cycles combos per repeat — inline pairs break this.
+
 ### RULE 13: EVERYTHING IS GRIND UNLESS USER SPECIFIES FULL SESSION
 The timer REQUIRES at least one phase with section: "grind" to function.
 - If the user asks for "just a warmup" or "warmup only": put the warmup content (stretching, jump rope, etc.) into a GRIND phase. No warmup section. No cooldown section. The warmup content IS the grind.
@@ -319,10 +326,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       let parsed: any = null;
       let lastError = '';
+      let validationErrors: string[] = [];
 
       for (let attempt = 0; attempt < 3; attempt++) {
         if (attempt > 0) {
-          console.log('[KOI] Retrying after 2s...');
+          console.log(`[KOI] Retrying (attempt ${attempt + 1}) after 2s...`);
           await new Promise(r => setTimeout(r, 2000));
         }
 
@@ -359,9 +367,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           jsonStr = jsonStr.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
         }
 
+        let candidate: any = null;
         try {
-          parsed = JSON.parse(jsonStr);
-          break;
+          candidate = JSON.parse(jsonStr);
         } catch (e) {
           let repaired = jsonStr;
           repaired = repaired.replace(/,\s*([\]}])/g, '$1');
@@ -375,25 +383,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
             repaired += '}'.repeat(openBraces - closeBraces);
           }
           try {
-            parsed = JSON.parse(repaired);
+            candidate = JSON.parse(repaired);
             console.log(`[KOI] JSON repaired on attempt ${attempt + 1}`);
-            break;
-          } catch (_) {}
-          console.error(`[KOI] JSON parse error (attempt ${attempt + 1}):`, e, 'Raw:', rawText.substring(0, 200));
-          lastError = 'Invalid JSON from AI';
+          } catch (_) {
+            console.error(`[KOI] JSON parse error (attempt ${attempt + 1}):`, e, 'Raw:', rawText.substring(0, 200));
+            lastError = 'Invalid JSON from AI';
+            continue;
+          }
         }
+
+        const repaired = autoRepair(candidate, { equipment: body.equipment, prompt: body.prompt, tier: body.userTier });
+        const { valid, errors } = validateParsedResult(repaired);
+        if (valid) {
+          parsed = repaired;
+          break;
+        }
+        console.error(`[KOI] Validation failed (attempt ${attempt + 1}):`, errors);
+        validationErrors = errors;
+        lastError = 'Workout validation failed';
       }
 
       if (!parsed) {
-        return res.status(422).json({ error: lastError || 'AI generation failed', fallback: true });
-      }
-
-      parsed = autoRepair(parsed, { equipment: body.equipment, prompt: body.prompt, tier: body.userTier });
-
-      const { valid, errors } = validateParsedResult(parsed);
-      if (!valid) {
-        console.error('[KOI] Validation errors:', errors);
-        return res.status(422).json({ error: 'Workout validation failed', errors, fallback: true });
+        return res.status(422).json({ error: lastError || 'AI generation failed', errors: validationErrors, fallback: true });
       }
 
       console.log(`[KOI] Generated: "${parsed.name}" (${parsed.phases?.length} phases)`);
