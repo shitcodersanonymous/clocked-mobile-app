@@ -1,4 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
+import { useHistoryStore } from "@/stores/historyStore";
+import { analyzeWorkoutHistory } from "@/lib/workoutHistoryAnalysis";
+import { getApiUrl } from "@/lib/query-client";
 import {
   StyleSheet,
   Text,
@@ -98,21 +101,89 @@ export default function BuildScreen() {
     }
   }, [coachPrompt]);
 
-  const handleAiGenerate = () => {
+  const applyWorkoutToEditor = (workout: Workout) => {
+    setName(workout.name);
+    setDifficulty((workout.difficulty || "beginner") as ComboDifficulty);
+    setWarmupPhases(workout.sections.warmup);
+    setGrindPhases(workout.sections.grind);
+    setCooldownPhases(workout.sections.cooldown);
+    setMegasetRepeats(workout.megasetRepeats || 1);
+    setBuildMode("custom");
+  };
+
+  const handleAiGenerate = async () => {
     if (!aiPrompt.trim()) return;
     setAiGenerating(true);
+
     try {
       const userLevel = user?.experienceLevel || user?.prestige || "beginner";
+      const userEquipment = (user as any)?.equipment || {};
+
+      let historyInsights = undefined;
+      try {
+        const history = useHistoryStore.getState().completedWorkouts;
+        if (history.length > 0) {
+          const analysisHistory = history.map((w) => ({
+            id: w.id,
+            workout_name: w.workoutName,
+            completed_at: w.completedAt,
+            duration: w.duration,
+            xp_earned: w.xpEarned,
+            difficulty: w.difficulty || null,
+            notes: w.notes || null,
+            round_feedback: w.roundFeedback || null,
+            is_manual_entry: w.isManualEntry,
+          }));
+          const insights = analyzeWorkoutHistory(analysisHistory);
+          historyInsights = {
+            averageDifficulty: insights.averageDifficulty,
+            recentTrend: insights.recentTrend,
+            preferredDuration: insights.preferredDuration,
+            suggestedDifficultyAdjust: insights.suggestedDifficultyAdjust,
+            totalWorkouts: insights.totalWorkouts,
+          };
+        }
+      } catch {
+        // History analysis is optional — don't block generation
+      }
+
+      // Layer 1: KOI AI agent via Gemini API
+      try {
+        const baseUrl = getApiUrl();
+        const response = await fetch(
+          new URL("/api/generate-workout", baseUrl).toString(),
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              prompt: aiPrompt.trim(),
+              userTier: userLevel,
+              equipment: userEquipment,
+              experienceLevel: userLevel,
+              historyInsights,
+            }),
+          }
+        );
+
+        const data = await response.json();
+
+        if (!data.fallback && !data.error && data.phases) {
+          console.log("[KOI] AI success:", data.name);
+          const workout = parsedResultToWorkoutFn(data);
+          applyWorkoutToEditor(workout);
+          return;
+        }
+
+        console.warn("[KOI] AI returned fallback:", data.error);
+      } catch (e) {
+        console.warn("[KOI] AI failed, falling back to regex parser:", e);
+      }
+
+      // Layer 2: Regex parser fallback
       const parsed = parseWorkoutInputFn(aiPrompt.trim(), userLevel);
       const workout = parsedResultToWorkoutFn(parsed);
+      applyWorkoutToEditor(workout);
 
-      setName(workout.name);
-      setDifficulty((workout.difficulty || "beginner") as ComboDifficulty);
-      setWarmupPhases(workout.sections.warmup);
-      setGrindPhases(workout.sections.grind);
-      setCooldownPhases(workout.sections.cooldown);
-      setMegasetRepeats(workout.megasetRepeats || 1);
-      setBuildMode("custom");
     } catch {
       Alert.alert("Parse Error", "Could not parse that prompt. Try being more specific.");
     } finally {
