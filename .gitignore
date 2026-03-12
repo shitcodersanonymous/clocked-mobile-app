@@ -42,3 +42,7 @@ yarn-error.*
 
 # Large reference assets (not source code)
 attached_assets/
+
+# npm cache and logs
+.npm/
+*.log
