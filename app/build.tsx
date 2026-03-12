@@ -51,6 +51,7 @@ const DEFAULT_SEGMENT: Omit<WorkoutSegment, "id"> = {
 };
 
 export default function BuildScreen() {
+  const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const params = useLocalSearchParams<{ edit?: string; coachPrompt?: string }>();

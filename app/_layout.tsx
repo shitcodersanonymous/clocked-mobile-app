@@ -9,59 +9,64 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { queryClient } from "@/lib/query-client";
 import { ToastContainer } from "@/hooks/useToast";
 import { usePresetSeeding } from "@/hooks/usePresetSeeding";
+import { ThemeProvider, useTheme } from "@/contexts/ThemeContext";
 import colors from "@/constants/colors";
 
 SplashScreen.preventAutoHideAsync();
 
-const headerStyles = {
-  headerStyle: { backgroundColor: colors.dark.background },
-  headerTintColor: colors.dark.volt,
-  headerTitleStyle: { color: colors.dark.foreground },
-  contentStyle: { backgroundColor: colors.dark.background },
-};
+// headerStyles moved to RootLayoutNav to use theme
 
 function RootLayoutNav() {
+  const { theme, isDark } = useTheme();
+  
+  const themedHeaderStyles = {
+    headerStyle: {
+      backgroundColor: theme.background,
+    },
+    headerTintColor: theme.text,
+    headerTitleStyle: {
+      fontWeight: "bold" as const,
+    },
+  };
+
   return (
-    <Stack
-      screenOptions={{
-        headerBackTitle: "Back",
-        ...headerStyles,
-      }}
-    >
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen
-        name="onboarding"
-        options={{ headerShown: false, gestureEnabled: false }}
+    <>
+      <StatusBar
+        barStyle={isDark ? "light-content" : "dark-content"}
+        backgroundColor="transparent"
+        translucent
       />
-      <Stack.Screen
-        name="build"
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="history"
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="workout/[id]"
-        options={{ headerShown: false, gestureEnabled: false }}
-      />
-      <Stack.Screen
-        name="quick-session"
-        options={{ headerShown: false, gestureEnabled: false }}
-      />
-      <Stack.Screen
-        name="settings"
-        options={{ title: "Settings" }}
-      />
-      <Stack.Screen
-        name="gloves"
-        options={{ title: "Gloves" }}
-      />
-      <Stack.Screen
-        name="edit-profile"
-        options={{ headerShown: false }}
-      />
-    </Stack>
+      <Stack
+        screenOptions={{
+          headerBackTitle: "Back",
+          ...themedHeaderStyles,
+        }}
+      >
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="onboarding"
+          options={{ headerShown: false, gestureEnabled: false }}
+        />
+        <Stack.Screen
+          name="build"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="history"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="workout/[id]"
+          options={{ headerShown: false, gestureEnabled: false }}
+        />
+        <Stack.Screen
+          name="quick-session"
+          options={{ headerShown: false, gestureEnabled: false }}
+        />
+        <Stack.Screen name="gloves" options={{ headerShown: false }} />
+        <Stack.Screen name="settings" options={{ headerShown: false }} />
+      </Stack>
+    </>
   );
 }
 
@@ -74,15 +79,16 @@ export default function RootLayout() {
 
   return (
     <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.dark.background }}>
-          <KeyboardProvider>
-            <StatusBar barStyle="light-content" backgroundColor={colors.dark.background} />
-            <RootLayoutNav />
-            <ToastContainer />
-          </KeyboardProvider>
-        </GestureHandlerRootView>
-      </QueryClientProvider>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <QueryClientProvider client={queryClient}>
+          <ThemeProvider>
+            <KeyboardProvider statusBarTranslucent navigationBarTranslucent>
+              <RootLayoutNav />
+              <ToastContainer />
+            </KeyboardProvider>
+          </ThemeProvider>
+        </QueryClientProvider>
+      </GestureHandlerRootView>
     </ErrorBoundary>
   );
 }

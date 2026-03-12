@@ -14,6 +14,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import colors from '@/constants/colors';
+import { useTheme } from "@/contexts/ThemeContext";
 import { FlatSegment } from '@/hooks/useWorkoutTimer';
 
 // ─── Move helpers ─────────────────────────────────────────────────────────────
@@ -44,9 +45,9 @@ export function getDisplayMove(move: string): { display: string; type: 'punch' |
 
 export function getMoveColor(type: 'punch' | 'defense' | 'movement'): string {
   switch (type) {
-    case 'punch': return colors.dark.volt;
-    case 'defense': return colors.dark.blue;
-    case 'movement': return colors.dark.orange;
+    case 'punch': return theme.volt;
+    case 'defense': return theme.blue;
+    case 'movement': return theme.orange;
   }
 }
 
@@ -62,6 +63,7 @@ interface ComboDisplayProps {
 }
 
 export default function ComboDisplay({
+  const { theme } = useTheme();
   isRestSegment,
   currentSegment,
   nextSegment,
@@ -96,7 +98,7 @@ export default function ComboDisplay({
                     </Text>
                   </View>
                   {idx < displayCombo.length - 1 && (
-                    <Ionicons name="chevron-forward" size={12} color={colors.dark.mutedForeground} />
+                    <Ionicons name="chevron-forward" size={12} color={theme.mutedForeground} />
                   )}
                 </View>
               );
@@ -122,11 +124,11 @@ const styles = StyleSheet.create({
   comboCard: {
     width: '100%',
     maxWidth: 300,
-    backgroundColor: colors.dark.surface1,
+    backgroundColor: theme.surface1,
     borderRadius: 16,
     padding: 14,
     borderWidth: 1,
-    borderColor: colors.dark.surface3,
+    borderColor: theme.surface3,
     alignItems: 'center',
   },
   comboCardLabel: {
@@ -163,7 +165,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 6,
-    backgroundColor: colors.dark.surface2,
+    backgroundColor: theme.surface2,
   },
   moveBadgeText: {
     fontSize: 18,

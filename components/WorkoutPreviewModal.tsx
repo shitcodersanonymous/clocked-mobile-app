@@ -9,7 +9,9 @@ import {
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import colors from '@/constants/colors';
+import { useTheme } from "@/contexts/ThemeContext";
 import { DIFFICULTY_COLORS } from '@/constants/colors';
+import { useTheme } from "@/contexts/ThemeContext";
 import type { Workout, WorkoutPhase, WorkoutSegment } from '@/lib/types';
 
 interface WorkoutPreviewModalProps {
@@ -64,11 +66,11 @@ function countSegments(workout: Workout): { work: number; rest: number } {
 
 function PhaseCard({ phase, sectionLabel }: { phase: WorkoutPhase; sectionLabel: string }) {
   const sectionColors: Record<string, string> = {
-    warmup: colors.dark.orange,
-    grind: colors.dark.volt,
-    cooldown: colors.dark.blue,
+    warmup: theme.orange,
+    grind: theme.volt,
+    cooldown: theme.blue,
   };
-  const accentColor = sectionColors[sectionLabel] ?? colors.dark.volt;
+  const accentColor = sectionColors[sectionLabel] ?? theme.volt;
 
   const totalPhaseDuration = phase.segments.reduce((sum, s) => sum + s.duration, 0) * phase.repeats;
 
@@ -96,7 +98,7 @@ function SegmentRow({ segment }: { segment: WorkoutSegment }) {
   const isRest = segment.type === 'rest';
   return (
     <View style={segStyles.row}>
-      <View style={[segStyles.dot, { backgroundColor: isRest ? colors.dark.mutedForeground : colors.dark.volt }]} />
+      <View style={[segStyles.dot, { backgroundColor: isRest ? theme.mutedForeground : theme.volt }]} />
       <Text style={[segStyles.name, isRest && segStyles.restName]} numberOfLines={1}>
         {segment.name}
       </Text>
@@ -106,6 +108,7 @@ function SegmentRow({ segment }: { segment: WorkoutSegment }) {
 }
 
 export default function WorkoutPreviewModal({
+  const { theme } = useTheme();
   workout,
   visible,
   onClose,
@@ -113,7 +116,7 @@ export default function WorkoutPreviewModal({
 }: WorkoutPreviewModalProps) {
   const xpEstimate = estimateXP(workout);
   const { work, rest } = countSegments(workout);
-  const diffColor = DIFFICULTY_COLORS[workout.difficulty] ?? colors.dark.mutedForeground;
+  const diffColor = DIFFICULTY_COLORS[workout.difficulty] ?? theme.mutedForeground;
 
   const hasWarmup = workout.sections.warmup.length > 0;
   const hasGrind = workout.sections.grind.length > 0;
@@ -142,25 +145,25 @@ export default function WorkoutPreviewModal({
               </View>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn} testID="close-preview">
-              <Ionicons name="close" size={22} color={colors.dark.mutedForeground} />
+              <Ionicons name="close" size={22} color={theme.mutedForeground} />
             </TouchableOpacity>
           </View>
 
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
-              <Ionicons name="time-outline" size={18} color={colors.dark.volt} />
+              <Ionicons name="time-outline" size={18} color={theme.volt} />
               <Text style={styles.statValue}>{formatDuration(workout.totalDuration)}</Text>
               <Text style={styles.statLabel}>Duration</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
-              <MaterialCommunityIcons name="lightning-bolt" size={18} color={colors.dark.amber} />
+              <MaterialCommunityIcons name="lightning-bolt" size={18} color={theme.amber} />
               <Text style={styles.statValue}>~{xpEstimate}</Text>
               <Text style={styles.statLabel}>XP Est.</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
-              <Ionicons name="layers-outline" size={18} color={colors.dark.blue} />
+              <Ionicons name="layers-outline" size={18} color={theme.blue} />
               <Text style={styles.statValue}>{work + rest}</Text>
               <Text style={styles.statLabel}>Segments</Text>
             </View>
@@ -174,8 +177,8 @@ export default function WorkoutPreviewModal({
             {hasWarmup && (
               <View style={styles.sectionBlock}>
                 <View style={styles.sectionHeader}>
-                  <Ionicons name="flame-outline" size={16} color={colors.dark.orange} />
-                  <Text style={[styles.sectionTitle, { color: colors.dark.orange }]}>Warm Up</Text>
+                  <Ionicons name="flame-outline" size={16} color={theme.orange} />
+                  <Text style={[styles.sectionTitle, { color: theme.orange }]}>Warm Up</Text>
                 </View>
                 {workout.sections.warmup.map((phase, i) => (
                   <PhaseCard key={phase.id || i} phase={phase} sectionLabel="warmup" />
@@ -186,8 +189,8 @@ export default function WorkoutPreviewModal({
             {hasGrind && (
               <View style={styles.sectionBlock}>
                 <View style={styles.sectionHeader}>
-                  <MaterialCommunityIcons name="boxing-glove" size={16} color={colors.dark.volt} />
-                  <Text style={[styles.sectionTitle, { color: colors.dark.volt }]}>Grind</Text>
+                  <MaterialCommunityIcons name="boxing-glove" size={16} color={theme.volt} />
+                  <Text style={[styles.sectionTitle, { color: theme.volt }]}>Grind</Text>
                 </View>
                 {workout.sections.grind.map((phase, i) => (
                   <PhaseCard key={phase.id || i} phase={phase} sectionLabel="grind" />
@@ -198,8 +201,8 @@ export default function WorkoutPreviewModal({
             {hasCooldown && (
               <View style={styles.sectionBlock}>
                 <View style={styles.sectionHeader}>
-                  <Ionicons name="snow-outline" size={16} color={colors.dark.blue} />
-                  <Text style={[styles.sectionTitle, { color: colors.dark.blue }]}>Cool Down</Text>
+                  <Ionicons name="snow-outline" size={16} color={theme.blue} />
+                  <Text style={[styles.sectionTitle, { color: theme.blue }]}>Cool Down</Text>
                 </View>
                 {workout.sections.cooldown.map((phase, i) => (
                   <PhaseCard key={phase.id || i} phase={phase} sectionLabel="cooldown" />
@@ -209,7 +212,7 @@ export default function WorkoutPreviewModal({
 
             {!hasWarmup && !hasGrind && !hasCooldown && (
               <View style={styles.emptyState}>
-                <Ionicons name="document-text-outline" size={40} color={colors.dark.mutedForeground} />
+                <Ionicons name="document-text-outline" size={40} color={theme.mutedForeground} />
                 <Text style={styles.emptyText}>No phases configured</Text>
               </View>
             )}
@@ -222,7 +225,7 @@ export default function WorkoutPreviewModal({
               activeOpacity={0.8}
               testID="start-workout"
             >
-              <Ionicons name="play" size={20} color={colors.dark.background} />
+              <Ionicons name="play" size={20} color={theme.background} />
               <Text style={styles.startText}>Start Workout</Text>
             </TouchableOpacity>
           </View>
@@ -239,7 +242,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   container: {
-    backgroundColor: colors.dark.surface1,
+    backgroundColor: theme.surface1,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: '88%',
@@ -249,7 +252,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: colors.dark.surface4,
+    backgroundColor: theme.surface4,
     alignSelf: 'center',
     marginTop: 10,
     marginBottom: 8,
@@ -264,7 +267,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: '700' as const,
-    color: colors.dark.foreground,
+    color: theme.foreground,
     letterSpacing: -0.3,
   },
   badgeRow: {
@@ -290,7 +293,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginHorizontal: 20,
-    backgroundColor: colors.dark.surface2,
+    backgroundColor: theme.surface2,
     borderRadius: 14,
     paddingVertical: 14,
     paddingHorizontal: 8,
@@ -304,17 +307,17 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 16,
     fontWeight: '700' as const,
-    color: colors.dark.foreground,
+    color: theme.foreground,
   },
   statLabel: {
     fontSize: 11,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     fontWeight: '500' as const,
   },
   statDivider: {
     width: 1,
     height: 32,
-    backgroundColor: colors.dark.border,
+    backgroundColor: theme.border,
   },
   scroll: {
     flex: 1,
@@ -345,7 +348,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   emptyText: {
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     fontSize: 14,
   },
   footer: {
@@ -357,20 +360,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: colors.dark.volt,
+    backgroundColor: theme.volt,
     borderRadius: 14,
     paddingVertical: 16,
   },
   startText: {
     fontSize: 16,
     fontWeight: '700' as const,
-    color: colors.dark.background,
+    color: theme.background,
   },
 });
 
 const phaseStyles = StyleSheet.create({
   card: {
-    backgroundColor: colors.dark.surface2,
+    backgroundColor: theme.surface2,
     borderRadius: 10,
     borderLeftWidth: 3,
     padding: 12,
@@ -392,7 +395,7 @@ const phaseStyles = StyleSheet.create({
     gap: 6,
   },
   pill: {
-    backgroundColor: colors.dark.surface4,
+    backgroundColor: theme.surface4,
     borderRadius: 4,
     paddingHorizontal: 6,
     paddingVertical: 2,
@@ -400,11 +403,11 @@ const phaseStyles = StyleSheet.create({
   pillText: {
     fontSize: 11,
     fontWeight: '600' as const,
-    color: colors.dark.foreground,
+    color: theme.foreground,
   },
   duration: {
     fontSize: 12,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
   },
 });
 
@@ -423,15 +426,15 @@ const segStyles = StyleSheet.create({
   name: {
     flex: 1,
     fontSize: 13,
-    color: colors.dark.foreground,
+    color: theme.foreground,
   },
   restName: {
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     fontStyle: 'italic' as const,
   },
   dur: {
     fontSize: 12,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     fontWeight: '500' as const,
   },
 });

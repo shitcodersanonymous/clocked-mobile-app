@@ -12,6 +12,7 @@ import RoadToBMF from '@/components/ui/RoadToBMF';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import colors, { PRESTIGE_COLORS, BADGE_CATEGORY_COLORS_NATIVE } from '@/constants/colors';
+import { useTheme } from "@/contexts/ThemeContext";
 import { useUserStore } from '@/stores/userStore';
 import { useHistoryStore } from '@/stores/historyStore';
 import { useBadgeStore } from '@/stores/badgeStore';
@@ -43,6 +44,7 @@ import { formatRelativeDate } from '@/lib/utils';
 import { executePrestige } from '@/lib/prestigeActions';
 
 export default function StatsScreen() {
+  const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const user = useUserStore((s) => s.user);
@@ -232,14 +234,14 @@ export default function StatsScreen() {
           activeOpacity={0.8}
         >
           <View style={styles.prestigeBannerContent}>
-            <Ionicons name="arrow-up-circle" size={22} color={colors.dark.volt} />
+            <Ionicons name="arrow-up-circle" size={22} color={theme.volt} />
             <View style={{ flex: 1 }}>
               <Text style={styles.prestigeBannerTitle}>Prestige Available</Text>
               <Text style={styles.prestigeBannerSub}>
                 Advance to {PRESTIGE_NAMES[getNextPrestige(prestige)!]}
               </Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.dark.mutedForeground} />
+            <Ionicons name="chevron-forward" size={18} color={theme.mutedForeground} />
           </View>
         </TouchableOpacity>
       )}
@@ -274,7 +276,7 @@ export default function StatsScreen() {
             {unlockedGloveCount}/52 Gloves Unlocked
           </Text>
         </View>
-        <Ionicons name="chevron-forward" size={18} color={colors.dark.mutedForeground} />
+        <Ionicons name="chevron-forward" size={18} color={theme.mutedForeground} />
       </TouchableOpacity>
 
       <View style={styles.section}>
@@ -291,8 +293,8 @@ export default function StatsScreen() {
       >
         {badgeSummary.map(({ category, total, earned }) => {
           const catColors = BADGE_CATEGORY_COLORS_NATIVE[category] || {
-            bg: colors.dark.surface2,
-            text: colors.dark.volt,
+            bg: theme.surface2,
+            text: theme.volt,
           };
           const pct = total > 0 ? (earned / total) * 100 : 0;
           return (
@@ -319,19 +321,19 @@ export default function StatsScreen() {
       </View>
       <View style={styles.statGrid3}>
         <View style={styles.statCardMini}>
-          <Ionicons name="flash" size={20} color={colors.dark.volt} />
+          <Ionicons name="flash" size={20} color={theme.volt} />
           <Text style={styles.statCardValue}>
             {totalXP.toLocaleString()}
           </Text>
           <Text style={styles.statCardLabel}>Total XP</Text>
         </View>
         <View style={styles.statCardMini}>
-          <Ionicons name="trophy" size={20} color={colors.dark.amber} />
+          <Ionicons name="trophy" size={20} color={theme.amber} />
           <Text style={styles.statCardValue}>{workoutsCompleted}</Text>
           <Text style={styles.statCardLabel}>Workouts</Text>
         </View>
         <View style={styles.statCardMini}>
-          <Ionicons name="flame" size={20} color={colors.dark.orange} />
+          <Ionicons name="flame" size={20} color={theme.orange} />
           <Text style={styles.statCardValue}>{currentStreak}d</Text>
           <Text style={styles.statCardLabel}>Streak</Text>
         </View>
@@ -409,7 +411,7 @@ export default function StatsScreen() {
       <View style={styles.card}>
         <View style={styles.streakHeaderRow}>
           <Text style={styles.streakCurrentLabel}>Current</Text>
-          <Text style={[styles.streakCurrentValue, { color: colors.dark.volt }]}>
+          <Text style={[styles.streakCurrentValue, { color: theme.volt }]}>
             {streakMult}x
           </Text>
         </View>
@@ -431,16 +433,16 @@ export default function StatsScreen() {
                     styles.streakDot,
                     {
                       backgroundColor: isActive
-                        ? colors.dark.volt
-                        : colors.dark.surface3,
+                        ? theme.volt
+                        : theme.surface3,
                     },
                   ]}
                 />
                 <Text
                   style={[
                     styles.streakTierLabel,
-                    isActive && { color: colors.dark.foreground },
-                    isCurrent && { color: colors.dark.volt },
+                    isActive && { color: theme.foreground },
+                    isCurrent && { color: theme.volt },
                   ]}
                 >
                   {tier.min === 0
@@ -452,7 +454,7 @@ export default function StatsScreen() {
                 <Text
                   style={[
                     styles.streakTierMult,
-                    isCurrent && { color: colors.dark.volt },
+                    isCurrent && { color: theme.volt },
                   ]}
                 >
                   {tier.label}
@@ -536,7 +538,7 @@ export default function StatsScreen() {
                 </Text>
               </View>
               <View style={styles.sessionXpRow}>
-                <Ionicons name="flash" size={14} color={colors.dark.volt} />
+                <Ionicons name="flash" size={14} color={theme.volt} />
                 <Text style={styles.sessionXpText}>
                   +{session.xpEarned.toLocaleString()}
                 </Text>
@@ -564,7 +566,7 @@ export default function StatsScreen() {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Ranking Ladder</Text>
-        <Text style={[styles.sectionBadgeCount, { color: colors.dark.volt }]}>
+        <Text style={[styles.sectionBadgeCount, { color: theme.volt }]}>
           {PRESTIGE_NAMES[prestige]}
         </Text>
       </View>
@@ -587,17 +589,17 @@ export default function StatsScreen() {
                     styles.rankDot,
                     {
                       backgroundColor: isAchieved
-                        ? colors.dark.volt
-                        : colors.dark.surface3,
+                        ? theme.volt
+                        : theme.surface3,
                     },
                   ]}
                 />
                 <Text
                   style={[
                     styles.rankName,
-                    isCurrentRanking && { color: colors.dark.volt },
+                    isCurrentRanking && { color: theme.volt },
                     !isCurrentRanking &&
-                      isAchieved && { color: colors.dark.foreground },
+                      isAchieved && { color: theme.foreground },
                   ]}
                 >
                   {RANKING_NAMES[rankItem]}
@@ -617,7 +619,7 @@ export default function StatsScreen() {
 const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
-    backgroundColor: colors.dark.background,
+    backgroundColor: theme.background,
   },
   content: {
     paddingHorizontal: 16,
@@ -625,14 +627,14 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 24,
     fontWeight: '700' as const,
-    color: colors.dark.foreground,
+    color: theme.foreground,
     marginBottom: 20,
   },
   prestigeBanner: {
-    backgroundColor: colors.dark.voltDim,
+    backgroundColor: theme.voltDim,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: colors.dark.voltMuted,
+    borderColor: theme.voltMuted,
     marginBottom: 16,
     overflow: 'hidden',
   },
@@ -645,19 +647,19 @@ const styles = StyleSheet.create({
   prestigeBannerTitle: {
     fontSize: 14,
     fontWeight: '700' as const,
-    color: colors.dark.volt,
+    color: theme.volt,
   },
   prestigeBannerSub: {
     fontSize: 12,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     marginTop: 2,
   },
   xpCard: {
-    backgroundColor: colors.dark.surface1,
+    backgroundColor: theme.surface1,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: colors.dark.border,
+    borderColor: theme.border,
     marginBottom: 12,
     overflow: 'hidden',
   },
@@ -667,15 +669,15 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: colors.dark.voltDim,
+    backgroundColor: theme.voltDim,
     opacity: 0.3,
   },
   gloveCard: {
-    backgroundColor: colors.dark.surface1,
+    backgroundColor: theme.surface1,
     borderRadius: 16,
     padding: 14,
     borderWidth: 1,
-    borderColor: colors.dark.border,
+    borderColor: theme.border,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
@@ -686,16 +688,16 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: colors.dark.voltMuted,
+    borderColor: theme.voltMuted,
   },
   gloveCardName: {
     fontSize: 14,
     fontWeight: '700' as const,
-    color: colors.dark.foreground,
+    color: theme.foreground,
   },
   gloveCardSub: {
     fontSize: 12,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     marginTop: 2,
   },
   section: {
@@ -708,14 +710,14 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 12,
     fontWeight: '700' as const,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
   sectionBadgeCount: {
     fontSize: 12,
     fontWeight: '700' as const,
-    color: colors.dark.volt,
+    color: theme.volt,
   },
   badgeScrollWrap: {
     marginHorizontal: -16,
@@ -749,7 +751,7 @@ const styles = StyleSheet.create({
   },
   badgePillLabel: {
     fontSize: 9,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     textTransform: 'uppercase',
     letterSpacing: 0.3,
     lineHeight: 11,
@@ -785,11 +787,11 @@ const styles = StyleSheet.create({
   trainingCard: {
     width: '48%' as any,
     flexGrow: 1,
-    backgroundColor: colors.dark.surface1,
+    backgroundColor: theme.surface1,
     borderRadius: 14,
     padding: 14,
     borderWidth: 1,
-    borderColor: colors.dark.border,
+    borderColor: theme.border,
     gap: 4,
   },
   trainingCardHeader: {
@@ -808,11 +810,11 @@ const styles = StyleSheet.create({
   trainingCardValue: {
     fontSize: 22,
     fontWeight: '800' as const,
-    color: colors.dark.foreground,
+    color: theme.foreground,
   },
   trainingCardLabel: {
     fontSize: 11,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     fontWeight: '500' as const,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -837,32 +839,32 @@ const styles = StyleSheet.create({
   },
   statCardMini: {
     flex: 1,
-    backgroundColor: colors.dark.surface1,
+    backgroundColor: theme.surface1,
     borderRadius: 14,
     padding: 14,
     alignItems: 'center',
     gap: 6,
     borderWidth: 1,
-    borderColor: colors.dark.border,
+    borderColor: theme.border,
   },
   statCardValue: {
     fontSize: 20,
     fontWeight: '700' as const,
-    color: colors.dark.foreground,
+    color: theme.foreground,
   },
   statCardLabel: {
     fontSize: 10,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     fontWeight: '500' as const,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   card: {
-    backgroundColor: colors.dark.surface1,
+    backgroundColor: theme.surface1,
     borderRadius: 16,
     padding: 14,
     borderWidth: 1,
-    borderColor: colors.dark.border,
+    borderColor: theme.border,
     marginBottom: 16,
   },
   streakHeaderRow: {
@@ -873,7 +875,7 @@ const styles = StyleSheet.create({
   },
   streakCurrentLabel: {
     fontSize: 13,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     fontWeight: '600' as const,
   },
   streakCurrentValue: {
@@ -891,7 +893,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   streakTierRowActive: {
-    backgroundColor: colors.dark.voltDim,
+    backgroundColor: theme.voltDim,
   },
   streakDot: {
     width: 8,
@@ -902,12 +904,12 @@ const styles = StyleSheet.create({
   streakTierLabel: {
     flex: 1,
     fontSize: 13,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     fontWeight: '500' as const,
   },
   streakTierMult: {
     fontSize: 13,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     fontWeight: '600' as const,
   },
   calDayHeaders: {
@@ -919,7 +921,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 11,
     fontWeight: '600' as const,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
   },
   calGrid: {
     flexDirection: 'row',
@@ -943,26 +945,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   calCellInnerWorked: {
-    backgroundColor: colors.dark.volt,
+    backgroundColor: theme.volt,
   },
   calCellInnerToday: {
     borderWidth: 1.5,
-    borderColor: colors.dark.volt,
+    borderColor: theme.volt,
   },
   calCellInnerTodayWorked: {
-    backgroundColor: colors.dark.volt,
+    backgroundColor: theme.volt,
   },
   calCellText: {
     fontSize: 12,
     fontWeight: '500' as const,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
   },
   calCellTextWorked: {
-    color: colors.dark.background,
+    color: theme.background,
     fontWeight: '800' as const,
   },
   calCellTextToday: {
-    color: colors.dark.volt,
+    color: theme.volt,
     fontWeight: '700' as const,
   },
   sessionRow: {
@@ -972,16 +974,16 @@ const styles = StyleSheet.create({
   },
   sessionRowBorder: {
     borderBottomWidth: 1,
-    borderBottomColor: colors.dark.border,
+    borderBottomColor: theme.border,
   },
   sessionName: {
     fontSize: 14,
     fontWeight: '700' as const,
-    color: colors.dark.foreground,
+    color: theme.foreground,
   },
   sessionMeta: {
     fontSize: 10,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     marginTop: 2,
   },
   sessionXpRow: {
@@ -993,11 +995,11 @@ const styles = StyleSheet.create({
   sessionXpText: {
     fontSize: 14,
     fontWeight: '800' as const,
-    color: colors.dark.volt,
+    color: theme.volt,
   },
   emptyText: {
     fontSize: 14,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     textAlign: 'center',
     paddingVertical: 20,
   },
@@ -1010,7 +1012,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   rankRowActive: {
-    backgroundColor: colors.dark.voltDim,
+    backgroundColor: theme.voltDim,
   },
   rankLeft: {
     flexDirection: 'row',
@@ -1025,10 +1027,10 @@ const styles = StyleSheet.create({
   rankName: {
     fontSize: 14,
     fontWeight: '600' as const,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
   },
   rankRange: {
     fontSize: 13,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
   },
 });

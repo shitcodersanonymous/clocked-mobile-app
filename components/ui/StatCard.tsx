@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import colors from '@/constants/colors';
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface StatCardProps {
   label: string;
@@ -18,101 +19,56 @@ export function StatCard({
   subtitle,
   icon,
   iconColor,
-  accentColor = colors.dark.volt,
+  accentColor,
 }: StatCardProps) {
+  const { theme } = useTheme();
+  const finalAccentColor = accentColor || theme.volt;
+  
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.surface1, borderColor: theme.border }]}>
       {icon && (
-        <View style={[styles.iconWrap, { backgroundColor: (iconColor || accentColor) + '1A' }]}>
-          <Ionicons name={icon} size={20} color={iconColor || accentColor} />
+        <View style={[styles.iconWrap, { backgroundColor: (iconColor || finalAccentColor) + '1A' }]}>
+          <Ionicons name={icon} size={20} color={iconColor || finalAccentColor} />
         </View>
       )}
-      <Text style={[styles.value, { color: accentColor }]}>
+      <Text style={[styles.value, { color: finalAccentColor }]}>
         {typeof value === 'number' ? value.toLocaleString() : value}
       </Text>
-      <Text style={styles.label}>{label}</Text>
-      {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
-    </View>
-  );
-}
-
-export function StatCardRow({
-  label,
-  value,
-  icon,
-  iconColor,
-}: Pick<StatCardProps, 'label' | 'value' | 'icon' | 'iconColor'>) {
-  return (
-    <View style={styles.rowContainer}>
-      {icon && (
-        <Ionicons
-          name={icon}
-          size={18}
-          color={iconColor || colors.dark.volt}
-          style={styles.rowIcon}
-        />
-      )}
-      <Text style={styles.rowLabel}>{label}</Text>
-      <Text style={styles.rowValue}>
-        {typeof value === 'number' ? value.toLocaleString() : value}
-      </Text>
+      <Text style={[styles.label, { color: theme.foreground }]}>{label}</Text>
+      {subtitle && <Text style={[styles.subtitle, { color: theme.mutedForeground }]}>{subtitle}</Text>}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: colors.dark.surface1,
-    borderRadius: 16,
-    padding: 16,
-    alignItems: 'center',
-    gap: 4,
-    borderWidth: 1,
-    borderColor: colors.dark.border,
     flex: 1,
     minWidth: 100,
-  },
-  iconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 4,
+  },
+  iconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
   },
   value: {
-    fontSize: 22,
-    fontWeight: '700' as const,
+    fontSize: 24,
+    fontWeight: '800',
+    marginBottom: 4,
   },
   label: {
-    fontSize: 11,
-    color: colors.dark.mutedForeground,
-    fontWeight: '500' as const,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    fontSize: 13,
+    fontWeight: '600',
   },
   subtitle: {
-    fontSize: 10,
-    color: colors.dark.mutedForeground + '88',
+    fontSize: 11,
     marginTop: 2,
-  },
-  rowContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 4,
-  },
-  rowIcon: {
-    marginRight: 10,
-  },
-  rowLabel: {
-    flex: 1,
-    fontSize: 14,
-    color: colors.dark.foreground,
-  },
-  rowValue: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-    color: colors.dark.volt,
   },
 });

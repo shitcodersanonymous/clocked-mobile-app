@@ -13,6 +13,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import colors from '@/constants/colors';
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface WorkoutControlsProps {
   isPaused: boolean;
@@ -33,6 +34,7 @@ interface WorkoutControlsProps {
 const ADJUST_DELTAS = [-30, -15, 15, 30] as const;
 
 export default function WorkoutControls({
+  const { theme } = useTheme();
   isPaused,
   isPreparation,
   accentColor,
@@ -95,7 +97,7 @@ export default function WorkoutControls({
           onPress={onSkipBack}
           disabled={isPreparation}
         >
-          <Ionicons name="play-skip-back" size={22} color={colors.dark.foreground} />
+          <Ionicons name="play-skip-back" size={22} color={theme.foreground} />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -105,12 +107,12 @@ export default function WorkoutControls({
           <Ionicons
             name={isPaused ? 'play' : 'pause'}
             size={32}
-            color={colors.dark.background}
+            color={theme.background}
           />
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.controlBtn} onPress={onSkipForward}>
-          <Ionicons name="play-skip-forward" size={22} color={colors.dark.foreground} />
+          <Ionicons name="play-skip-forward" size={22} color={theme.foreground} />
         </TouchableOpacity>
       </View>
     </View>
@@ -133,12 +135,12 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: colors.dark.surface3,
+    borderColor: theme.surface3,
   },
   adjustBtnText: {
     fontSize: 12,
     fontWeight: '500',
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
   },
   progressInfo: {
     flexDirection: 'row',
@@ -149,7 +151,7 @@ const styles = StyleSheet.create({
   progressPhase: {
     fontSize: 12,
     fontWeight: '700',
-    color: colors.dark.foreground,
+    color: theme.foreground,
     textTransform: 'uppercase',
   },
   progressNext: {
@@ -164,12 +166,12 @@ const styles = StyleSheet.create({
   },
   progressNextText: {
     fontSize: 11,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
   },
   progressBarBg: {
     height: 3,
     borderRadius: 1.5,
-    backgroundColor: colors.dark.surface2,
+    backgroundColor: theme.surface2,
     overflow: 'hidden',
     marginBottom: 4,
   },
@@ -184,7 +186,7 @@ const styles = StyleSheet.create({
   },
   progressSection: {
     fontSize: 10,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     textTransform: 'uppercase',
   },
   progressCount: {
@@ -201,9 +203,9 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: colors.dark.surface1,
+    backgroundColor: theme.surface1,
     borderWidth: 1,
-    borderColor: colors.dark.surface3,
+    borderColor: theme.surface3,
     alignItems: 'center',
     justifyContent: 'center',
   },

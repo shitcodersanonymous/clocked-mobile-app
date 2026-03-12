@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollViewCompat';
 import colors from '@/constants/colors';
+import { useTheme } from "@/contexts/ThemeContext";
 import { useUserStore } from '@/stores/userStore';
 
 const experienceLevels = [
@@ -40,6 +41,7 @@ const goalOptions = [
 ];
 
 export default function EditProfileScreen() {
+  const { theme } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const user = useUserStore((s) => s.user);
@@ -87,13 +89,13 @@ export default function EditProfileScreen() {
 
   const renderEquipmentIcon = (item: typeof equipmentOptions[0]) => {
     if (item.iconSet === 'mci') {
-      return <MaterialCommunityIcons name={item.iconName as any} size={22} color={equipment[item.id] ? colors.dark.volt : colors.dark.mutedForeground} />;
+      return <MaterialCommunityIcons name={item.iconName as any} size={22} color={equipment[item.id] ? theme.volt : theme.mutedForeground} />;
     }
-    return <Ionicons name={item.iconName as any} size={22} color={equipment[item.id] ? colors.dark.volt : colors.dark.mutedForeground} />;
+    return <Ionicons name={item.iconName as any} size={22} color={equipment[item.id] ? theme.volt : theme.mutedForeground} />;
   };
 
   const renderGoalIcon = (item: typeof goalOptions[0], selected: boolean) => {
-    return <Ionicons name={item.iconName as any} size={20} color={selected ? colors.dark.volt : colors.dark.mutedForeground} />;
+    return <Ionicons name={item.iconName as any} size={20} color={selected ? theme.volt : theme.mutedForeground} />;
   };
 
   return (
@@ -102,17 +104,17 @@ export default function EditProfileScreen() {
         options={{
           headerShown: true,
           title: 'Edit Profile',
-          headerStyle: { backgroundColor: colors.dark.background },
-          headerTintColor: colors.dark.foreground,
+          headerStyle: { backgroundColor: theme.background },
+          headerTintColor: theme.foreground,
           headerTitleStyle: { fontWeight: '600' as const },
           headerLeft: () => (
             <TouchableOpacity onPress={() => router.back()} style={{ paddingRight: 8 }}>
-              <Ionicons name="chevron-back" size={28} color={colors.dark.foreground} />
+              <Ionicons name="chevron-back" size={28} color={theme.foreground} />
             </TouchableOpacity>
           ),
           headerRight: () => (
             <TouchableOpacity onPress={handleSave} style={{ paddingLeft: 8 }}>
-              <Ionicons name="checkmark" size={28} color={colors.dark.volt} />
+              <Ionicons name="checkmark" size={28} color={theme.volt} />
             </TouchableOpacity>
           ),
         }}
@@ -131,7 +133,7 @@ export default function EditProfileScreen() {
             value={name}
             onChangeText={setName}
             placeholder="Your name"
-            placeholderTextColor={colors.dark.mutedForeground}
+            placeholderTextColor={theme.mutedForeground}
             autoCapitalize="words"
             returnKeyType="done"
           />
@@ -211,7 +213,7 @@ export default function EditProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.dark.background,
+    backgroundColor: theme.background,
   },
   content: {
     paddingHorizontal: 20,
@@ -223,53 +225,53 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     textTransform: 'uppercase',
     letterSpacing: 1,
     marginBottom: 12,
   },
   textInput: {
-    backgroundColor: colors.dark.surface2,
+    backgroundColor: theme.surface2,
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
-    color: colors.dark.foreground,
+    color: theme.foreground,
     borderWidth: 1,
-    borderColor: colors.dark.border,
+    borderColor: theme.border,
   },
   optionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.dark.surface2,
+    backgroundColor: theme.surface2,
     borderRadius: 12,
     padding: 14,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: colors.dark.border,
+    borderColor: theme.border,
   },
   optionRowSelected: {
-    borderColor: colors.dark.volt,
-    backgroundColor: colors.dark.voltDim,
+    borderColor: theme.volt,
+    backgroundColor: theme.voltDim,
   },
   radioOuter: {
     width: 22,
     height: 22,
     borderRadius: 11,
     borderWidth: 2,
-    borderColor: colors.dark.mutedForeground,
+    borderColor: theme.mutedForeground,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
   },
   radioOuterSelected: {
-    borderColor: colors.dark.volt,
+    borderColor: theme.volt,
   },
   radioInner: {
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: colors.dark.volt,
+    backgroundColor: theme.volt,
   },
   optionTextWrap: {
     flex: 1,
@@ -277,14 +279,14 @@ const styles = StyleSheet.create({
   optionLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.dark.foreground,
+    color: theme.foreground,
   },
   optionLabelSelected: {
-    color: colors.dark.volt,
+    color: theme.volt,
   },
   optionDesc: {
     fontSize: 13,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     marginTop: 2,
   },
   chipGrid: {
@@ -296,27 +298,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: colors.dark.surface2,
+    backgroundColor: theme.surface2,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 12,
     borderWidth: 1,
-    borderColor: colors.dark.border,
+    borderColor: theme.border,
   },
   chipSelected: {
-    borderColor: colors.dark.volt,
-    backgroundColor: colors.dark.voltDim,
+    borderColor: theme.volt,
+    backgroundColor: theme.voltDim,
   },
   chipLabel: {
     fontSize: 14,
     fontWeight: '500',
-    color: colors.dark.foreground,
+    color: theme.foreground,
   },
   chipLabelSelected: {
-    color: colors.dark.volt,
+    color: theme.volt,
   },
   saveButton: {
-    backgroundColor: colors.dark.volt,
+    backgroundColor: theme.volt,
     borderRadius: 14,
     paddingVertical: 16,
     alignItems: 'center',
@@ -326,6 +328,6 @@ const styles = StyleSheet.create({
   saveButtonText: {
     fontSize: 16,
     fontWeight: '700',
-    color: colors.dark.background,
+    color: theme.background,
   },
 });

@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, Platform } from 'react-native';
 import colors from '@/constants/colors';
+import { useTheme } from '@/contexts/ThemeContext';
 
 type ToastType = 'success' | 'error' | 'info' | 'warning';
 
