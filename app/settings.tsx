@@ -18,6 +18,8 @@ import colors from '@/constants/colors';
 import { useUserStore } from '@/stores/userStore';
 import { useWorkoutStore } from '@/stores/workoutStore';
 import { useTimerStore } from '@/stores/timerStore';
+import { useTheme, ThemeMode } from '@/contexts/ThemeContext';
+import { useThemedColors } from '@/hooks/useThemedColors';
 import { useHistoryStore } from '@/stores/historyStore';
 import { useBadgeStore } from '@/stores/badgeStore';
 import { useGloveStore } from '@/stores/gloveStore';
@@ -41,6 +43,8 @@ export default function SettingsScreen() {
   const user = useUserStore((s) => s.user);
   const updateUser = useUserStore((s) => s.updateUser);
   const setUser = useUserStore((s) => s.setUser);
+  const { theme, setTheme } = useTheme();
+  const themedColors = useThemedColors();
 
   const workouts = useWorkoutStore((s) => s.workouts);
   const archivedWorkouts = useWorkoutStore((s) => s.archivedWorkouts);
@@ -201,7 +205,7 @@ export default function SettingsScreen() {
   const webTopInset = Platform.OS === 'web' ? 67 : 0;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: themedColors.background }]}>
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={[
@@ -210,10 +214,125 @@ export default function SettingsScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
+        {/* Appearance Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Ionicons name="volume-high" size={18} color={colors.dark.volt} />
-            <Text style={styles.sectionTitle}>Sound & Voice</Text>
+            <Ionicons name="color-palette" size={18} color={themedColors.primary} />
+            <Text style={[styles.sectionTitle, { color: themedColors.text }]}>Appearance</Text>
+          </View>
+          <View style={[styles.card, { backgroundColor: themedColors.cardBackground, borderColor: themedColors.cardBorder }]}>
+            <View style={styles.settingRow}>
+              <View style={styles.settingLeft}>
+                <Text style={[styles.settingLabel, { color: themedColors.text }]}>Theme</Text>
+                <Text style={[styles.settingDescription, { color: themedColors.textSecondary }]}>
+                  Choose your preferred color scheme
+                </Text>
+              </View>
+            </View>
+            <View style={styles.themeOptions}>
+              <TouchableOpacity
+                style={[
+                  styles.themeOption,
+                  { borderColor: themedColors.border },
+                  theme === 'light' && { 
+                    borderColor: themedColors.primary,
+                    backgroundColor: themedColors.surfaceElevated,
+                  }
+                ]}
+                onPress={() => setTheme('light')}
+              >
+                <Ionicons 
+                  name="sunny" 
+                  size={24} 
+                  color={theme === 'light' ? themedColors.primary : themedColors.textSecondary} 
+                />
+                <Text style={[
+                  styles.themeOptionText,
+                  { color: theme === 'light' ? themedColors.primary : themedColors.textSecondary }
+                ]}>
+                  Light
+                </Text>
+                {theme === 'light' && (
+                  <Ionicons 
+                    name="checkmark-circle" 
+                    size={20} 
+                    color={themedColors.primary}
+                    style={styles.themeCheckmark}
+                  />
+                )}
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[
+                  styles.themeOption,
+                  { borderColor: themedColors.border },
+                  theme === 'dark' && { 
+                    borderColor: themedColors.primary,
+                    backgroundColor: themedColors.surfaceElevated,
+                  }
+                ]}
+                onPress={() => setTheme('dark')}
+              >
+                <Ionicons 
+                  name="moon" 
+                  size={24} 
+                  color={theme === 'dark' ? themedColors.primary : themedColors.textSecondary} 
+                />
+                <Text style={[
+                  styles.themeOptionText,
+                  { color: theme === 'dark' ? themedColors.primary : themedColors.textSecondary }
+                ]}>
+                  Dark
+                </Text>
+                {theme === 'dark' && (
+                  <Ionicons 
+                    name="checkmark-circle" 
+                    size={20} 
+                    color={themedColors.primary}
+                    style={styles.themeCheckmark}
+                  />
+                )}
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[
+                  styles.themeOption,
+                  { borderColor: themedColors.border },
+                  theme === 'system' && { 
+                    borderColor: themedColors.primary,
+                    backgroundColor: themedColors.surfaceElevated,
+                  }
+                ]}
+                onPress={() => setTheme('system')}
+              >
+                <Ionicons 
+                  name="phone-portrait" 
+                  size={24} 
+                  color={theme === 'system' ? themedColors.primary : themedColors.textSecondary} 
+                />
+                <Text style={[
+                  styles.themeOptionText,
+                  { color: theme === 'system' ? themedColors.primary : themedColors.textSecondary }
+                ]}>
+                  System
+                </Text>
+                {theme === 'system' && (
+                  <Ionicons 
+                    name="checkmark-circle" 
+                    size={20} 
+                    color={themedColors.primary}
+                    style={styles.themeCheckmark}
+                  />
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="volume-high" size={18} color={themedColors.primary} />
+            <Text style={[styles.sectionTitle, { color: themedColors.text }]}>Sound & Voice</Text>
           </View>
           <View style={styles.card}>
             <SettingToggle
@@ -705,5 +824,30 @@ const styles = StyleSheet.create({
     color: colors.dark.mutedForeground,
     marginTop: 8,
     marginBottom: 20,
+  },
+  themeOptions: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 12,
+  },
+  themeOption: {
+    flex: 1,
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+    gap: 8,
+    position: 'relative',
+  },
+  themeOptionText: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+  },
+  themeCheckmark: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
   },
 });

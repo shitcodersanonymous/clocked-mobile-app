@@ -1,177 +1,207 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import colors, { BADGE_CATEGORY_COLORS_NATIVE } from '@/constants/colors';
-import { formatNumber } from '@/lib/utils';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useThemedColors } from '@/hooks/useThemedColors';
 
-interface BadgeCardProps {
+export interface Badge {
+  id: string;
   name: string;
   description: string;
-  category: string;
-  xpReward: number;
-  shape: string;
-  earned: boolean;
-  progress?: number;
-  earnedAt?: string;
-  onPress?: () => void;
+  icon: keyof typeof Ionicons.glyphMap;
+  rarity: 'common' | 'rare' | 'epic' | 'legendary';
+  unlocked: boolean;
+  unlockedAt?: Date;
+  progress?: {
+    current: number;
+    required: number;
+  };
 }
 
-function getShapeIcon(shape: string): keyof typeof Ionicons.glyphMap {
-  switch (shape) {
-    case 'hexagon': return 'stop-outline';
-    case 'shield': return 'shield-outline';
-    case 'star': return 'star-outline';
-    case 'diamond': return 'diamond-outline';
-    default: return 'ellipse-outline';
-  }
+interface BadgeCardProps {
+  badge: Badge;
+  onPress?: (badge: Badge) => void;
 }
 
-function getShapeIconFilled(shape: string): keyof typeof Ionicons.glyphMap {
-  switch (shape) {
-    case 'hexagon': return 'stop';
-    case 'shield': return 'shield';
-    case 'star': return 'star';
-    case 'diamond': return 'diamond';
-    default: return 'ellipse';
-  }
-}
+export function BadgeCard({ badge, onPress }: BadgeCardProps) {
+  const colors = useThemedColors();
 
-export function BadgeCard({
-  name,
-  description,
-  category,
-  xpReward,
-  shape,
-  earned,
-  progress = 0,
-  onPress,
-}: BadgeCardProps) {
-  const categoryColors = BADGE_CATEGORY_COLORS_NATIVE[category] || BADGE_CATEGORY_COLORS_NATIVE.streak;
-  const iconName = earned ? getShapeIconFilled(shape) : getShapeIcon(shape);
+  const getRarityColors = (rarity: Badge['rarity']) => {
+    switch (rarity) {
+      case 'common':
+        return ['#6b7280', '#4b5563'];
+      case 'rare':
+        return ['#3b82f6', '#2563eb'];
+      case 'epic':
+        return ['#8b5cf6', '#7c3aed'];
+      case 'legendary':
+        return ['#f59e0b', '#d97706'];
+    }
+  };
+
+  const getRarityIcon = (rarity: Badge['rarity']) => {
+    switch (rarity) {
+      case 'common':
+        return 'circle';
+      case 'rare':
+        return 'diamond';
+      case 'epic':
+        return 'star';
+      case 'legendary':
+        return 'sparkles';
+    }
+  };
+
+  const rarityColors = getRarityColors(badge.rarity);
+  const isLocked = !badge.unlocked;
 
   return (
     <TouchableOpacity
-      style={styles.container}
-      onPress={onPress}
+      style={[styles.container, { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder }]}
+      onPress={() => onPress?.(badge)}
       activeOpacity={0.7}
+      disabled={!onPress}
     >
-      <View style={[
-        styles.iconContainer,
-        { backgroundColor: earned ? categoryColors.bg : colors.dark.surface2 },
-      ]}>
-        <Ionicons
-          name={iconName}
-          size={24}
-          color={earned ? categoryColors.text : colors.dark.mutedForeground + '66'}
-        />
-      </View>
-      <Text
-        style={[
-          styles.name,
-          { color: earned ? colors.dark.foreground : colors.dark.mutedForeground + '80' },
-        ]}
-        numberOfLines={2}
+      <LinearGradient
+        colors={isLocked ? [colors.surfaceElevated, colors.surface] : rarityColors}
+        style={styles.iconContainer}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
       >
-        {name}
-      </Text>
-      {earned ? (
-        <Text style={[styles.xp, { color: categoryColors.text }]}>
-          +{formatNumber(xpReward)}
-        </Text>
-      ) : progress > 0 ? (
-        <View style={styles.progressBarBg}>
-          <View style={[styles.progressBarFill, { width: `${Math.min(progress * 100, 100)}%`, backgroundColor: categoryColors.text }]} />
+        <Ionicons
+          name={badge.icon}
+          size={32}
+          color={isLocked ? colors.textMuted : '#ffffff'}
+        />
+        {isLocked && (
+          <View style={styles.lockOverlay}>
+            <Ionicons name="lock-closed" size={16} color={colors.textMuted} />
+          </View>
+        )}
+      </LinearGradient>
+
+      <View style={styles.content}>
+        <View style={styles.header}>
+          <Text
+            style={[styles.name, { color: isLocked ? colors.textMuted : colors.text }]}
+            numberOfLines={1}
+          >
+            {badge.name}
+          </Text>
+          <View style={styles.rarityBadge}>
+            <Ionicons
+              name={getRarityIcon(badge.rarity)}
+              size={12}
+              color={isLocked ? colors.textMuted : rarityColors[0]}
+            />
+          </View>
         </View>
-      ) : null}
-    </TouchableOpacity>
-  );
-}
 
-export function BadgeCardCompact({
-  name,
-  category,
-  shape,
-  earned,
-}: Pick<BadgeCardProps, 'name' | 'category' | 'shape' | 'earned'>) {
-  const categoryColors = BADGE_CATEGORY_COLORS_NATIVE[category] || BADGE_CATEGORY_COLORS_NATIVE.streak;
-  const iconName = earned ? getShapeIconFilled(shape) : getShapeIcon(shape);
+        <Text
+          style={[styles.description, { color: isLocked ? colors.textMuted : colors.textSecondary }]}
+          numberOfLines={2}
+        >
+          {badge.description}
+        </Text>
 
-  return (
-    <View style={styles.compactContainer}>
-      <View style={[
-        styles.compactIcon,
-        { backgroundColor: earned ? categoryColors.bg : colors.dark.surface2 },
-      ]}>
-        <Ionicons
-          name={iconName}
-          size={18}
-          color={earned ? categoryColors.text : colors.dark.mutedForeground + '44'}
-        />
+        {badge.progress && !badge.unlocked && (
+          <View style={styles.progressContainer}>
+            <View style={[styles.progressBar, { backgroundColor: colors.surfaceElevated }]}>
+              <View
+                style={[
+                  styles.progressFill,
+                  {
+                    width: `${(badge.progress.current / badge.progress.required) * 100}%`,
+                    backgroundColor: colors.primary,
+                  },
+                ]}
+              />
+            </View>
+            <Text style={[styles.progressText, { color: colors.textSecondary }]}>
+              {badge.progress.current} / {badge.progress.required}
+            </Text>
+          </View>
+        )}
+
+        {badge.unlocked && badge.unlockedAt && (
+          <Text style={[styles.unlockedText, { color: colors.success }]}>
+            <Ionicons name="checkmark-circle" size={12} /> Unlocked{' '}
+            {new Date(badge.unlockedAt).toLocaleDateString()}
+          </Text>
+        )}
       </View>
-      <Text
-        style={[
-          styles.compactName,
-          { color: earned ? colors.dark.foreground : colors.dark.mutedForeground + '50' },
-        ]}
-        numberOfLines={2}
-      >
-        {name}
-      </Text>
-    </View>
+    </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: 'center',
-    gap: 4,
-    padding: 8,
+    flexDirection: 'row',
+    padding: 12,
     borderRadius: 12,
-    width: 72,
+    borderWidth: 1,
+    gap: 12,
   },
   iconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
+    width: 64,
+    height: 64,
+    borderRadius: 12,
     justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  lockOverlay: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    borderRadius: 10,
+    padding: 4,
+  },
+  content: {
+    flex: 1,
+    gap: 6,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
   },
   name: {
-    fontSize: 9,
-    lineHeight: 12,
-    textAlign: 'center',
-    fontWeight: '500' as const,
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '700',
   },
-  xp: {
-    fontSize: 9,
-    fontWeight: '600' as const,
+  rarityBadge: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  progressBarBg: {
-    width: 36,
-    height: 3,
-    borderRadius: 1.5,
-    backgroundColor: colors.dark.surface3,
+  description: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  progressContainer: {
+    gap: 4,
+  },
+  progressBar: {
+    height: 6,
+    borderRadius: 3,
     overflow: 'hidden',
   },
-  progressBarFill: {
+  progressFill: {
     height: '100%',
-    borderRadius: 1.5,
+    borderRadius: 3,
   },
-  compactContainer: {
-    alignItems: 'center',
-    gap: 3,
-    width: 56,
+  progressText: {
+    fontSize: 11,
+    fontWeight: '600',
   },
-  compactIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  compactName: {
-    fontSize: 8,
-    lineHeight: 10,
-    textAlign: 'center',
+  unlockedText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
 });

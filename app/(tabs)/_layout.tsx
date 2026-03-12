@@ -4,33 +4,31 @@ import { Platform, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 
-import colors from "@/constants/colors";
-
-const VOLT = colors.dark.volt;
-const INACTIVE = colors.dark.tabIconDefault;
-const BG = colors.dark.background;
-const SURFACE = colors.dark.surface1;
+import { useTheme } from "@/contexts/ThemeContext";
+import { useThemedColors } from "@/hooks/useThemedColors";
 
 export default function TabLayout() {
+  const { effectiveTheme } = useTheme();
+  const colors = useThemedColors();
   const webTabBarHeight = Platform.OS === "web" ? 84 : undefined;
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: VOLT,
-        tabBarInactiveTintColor: INACTIVE,
+        tabBarActiveTintColor: colors.tabBarActive,
+        tabBarInactiveTintColor: colors.tabBarInactive,
         headerShown: true,
-        headerStyle: { backgroundColor: BG },
-        headerTintColor: VOLT,
-        headerTitleStyle: { color: colors.dark.foreground, fontWeight: "700" as const },
+        headerStyle: { backgroundColor: colors.background },
+        headerTintColor: colors.primary,
+        headerTitleStyle: { color: colors.text, fontWeight: "700" as const },
         tabBarStyle: {
           position: "absolute" as const,
           backgroundColor: Platform.select({
             ios: "transparent",
-            android: SURFACE,
-            web: SURFACE,
+            android: colors.tabBarBackground,
+            web: colors.tabBarBackground,
           }),
-          borderTopColor: colors.dark.border,
+          borderTopColor: colors.border,
           borderTopWidth: StyleSheet.hairlineWidth,
           elevation: 0,
           ...(webTabBarHeight ? { height: webTabBarHeight } : {}),
@@ -39,11 +37,11 @@ export default function TabLayout() {
           Platform.OS === "ios" ? (
             <BlurView
               intensity={80}
-              tint="dark"
+              tint={effectiveTheme}
               style={StyleSheet.absoluteFill}
             />
           ) : null,
-        sceneStyle: { backgroundColor: BG },
+        sceneStyle: { backgroundColor: colors.background },
       }}
     >
       <Tabs.Screen

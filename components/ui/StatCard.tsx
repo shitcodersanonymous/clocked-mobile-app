@@ -1,118 +1,105 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, ViewStyle } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import colors from '@/constants/colors';
+import { useThemedColors } from '@/hooks/useThemedColors';
 
 interface StatCardProps {
+  icon: keyof typeof Ionicons.glyphMap;
   label: string;
   value: string | number;
-  subtitle?: string;
-  icon?: keyof typeof Ionicons.glyphMap;
-  iconColor?: string;
-  accentColor?: string;
+  trend?: {
+    direction: 'up' | 'down';
+    value: string;
+  };
+  style?: ViewStyle;
 }
 
-export function StatCard({
-  label,
-  value,
-  subtitle,
-  icon,
-  iconColor,
-  accentColor = colors.dark.volt,
-}: StatCardProps) {
+export function StatCard({ icon, label, value, trend, style }: StatCardProps) {
+  const colors = useThemedColors();
+
   return (
-    <View style={styles.container}>
-      {icon && (
-        <View style={[styles.iconWrap, { backgroundColor: (iconColor || accentColor) + '1A' }]}>
-          <Ionicons name={icon} size={20} color={iconColor || accentColor} />
+    <View style={[
+      styles.container, 
+      { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder },
+      style
+    ]}>
+      <View style={styles.iconContainer}>
+        <View style={[styles.iconCircle, { backgroundColor: colors.surfaceElevated }]}>
+          <Ionicons name={icon} size={20} color={colors.primary} />
         </View>
-      )}
-      <Text style={[styles.value, { color: accentColor }]}>
-        {typeof value === 'number' ? value.toLocaleString() : value}
-      </Text>
-      <Text style={styles.label}>{label}</Text>
-      {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
-    </View>
-  );
-}
-
-export function StatCardRow({
-  label,
-  value,
-  icon,
-  iconColor,
-}: Pick<StatCardProps, 'label' | 'value' | 'icon' | 'iconColor'>) {
-  return (
-    <View style={styles.rowContainer}>
-      {icon && (
-        <Ionicons
-          name={icon}
-          size={18}
-          color={iconColor || colors.dark.volt}
-          style={styles.rowIcon}
-        />
-      )}
-      <Text style={styles.rowLabel}>{label}</Text>
-      <Text style={styles.rowValue}>
-        {typeof value === 'number' ? value.toLocaleString() : value}
-      </Text>
+      </View>
+      
+      <View style={styles.content}>
+        <Text style={[styles.label, { color: colors.textSecondary }]}>{label}</Text>
+        <View style={styles.valueRow}>
+          <Text style={[styles.value, { color: colors.text }]}>{value}</Text>
+          {trend && (
+            <View style={styles.trend}>
+              <Ionicons 
+                name={trend.direction === 'up' ? 'trending-up' : 'trending-down'} 
+                size={14} 
+                color={trend.direction === 'up' ? colors.success : colors.error} 
+              />
+              <Text style={[
+                styles.trendValue,
+                { color: trend.direction === 'up' ? colors.success : colors.error }
+              ]}>
+                {trend.value}
+              </Text>
+            </View>
+          )}
+        </View>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: colors.dark.surface1,
-    borderRadius: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
     padding: 16,
-    alignItems: 'center',
-    gap: 4,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: colors.dark.border,
-    flex: 1,
-    minWidth: 100,
+    gap: 12,
   },
-  iconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
+  iconContainer: {
     justifyContent: 'center',
-    marginBottom: 4,
+    alignItems: 'center',
   },
-  value: {
-    fontSize: 22,
-    fontWeight: '700' as const,
+  iconCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  content: {
+    flex: 1,
+    gap: 4,
   },
   label: {
-    fontSize: 11,
-    color: colors.dark.mutedForeground,
-    fontWeight: '500' as const,
+    fontSize: 13,
+    fontWeight: '500',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  subtitle: {
-    fontSize: 10,
-    color: colors.dark.mutedForeground + '88',
-    marginTop: 2,
-  },
-  rowContainer: {
+  valueRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 4,
+    gap: 8,
   },
-  rowIcon: {
-    marginRight: 10,
+  value: {
+    fontSize: 24,
+    fontWeight: '700',
   },
-  rowLabel: {
-    flex: 1,
-    fontSize: 14,
-    color: colors.dark.foreground,
+  trend: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
-  rowValue: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-    color: colors.dark.volt,
+  trendValue: {
+    fontSize: 12,
+    fontWeight: '600',
   },
 });

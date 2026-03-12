@@ -1,201 +1,177 @@
-import { StyleSheet, Text, View, TouchableOpacity } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import colors from "@/constants/colors";
-import { DIFFICULTY_COLORS } from "@/constants/colors";
-import { Workout } from "@/lib/types";
-import { formatDuration } from "@/lib/utils";
+import React from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
+import { useThemedColors } from '@/hooks/useThemedColors';
 
-function getDifficultyLabel(d: string): string {
-  const map: Record<string, string> = {
-    rookie: "ROOKIE",
-    beginner: "BEGINNER",
-    intermediate: "INTERMEDIATE",
-    advanced: "ADVANCED",
-    pro: "PRO",
-  };
-  return map[d] || d.toUpperCase();
-}
-
-export interface WorkoutCardProps {
-  workout: Workout;
-  onPlay: (id: string) => void;
-  onDelete: (id: string) => void;
-  isReorderMode: boolean;
-  onMoveUp: (id: string) => void;
-  onMoveDown: (id: string) => void;
-  isFirst: boolean;
-  isLast: boolean;
+interface WorkoutCardProps {
+  id: string;
+  name: string;
+  description: string;
+  duration: number;
+  rounds: number;
+  difficulty?: 'easy' | 'medium' | 'hard';
+  category?: string;
+  onPress?: () => void;
 }
 
 export function WorkoutCard({
-  workout,
-  onPlay,
-  onDelete,
-  isReorderMode,
-  onMoveUp,
-  onMoveDown,
-  isFirst,
-  isLast,
+  id,
+  name,
+  description,
+  duration,
+  rounds,
+  difficulty,
+  category,
+  onPress,
 }: WorkoutCardProps) {
-  const diffColor = DIFFICULTY_COLORS[workout.difficulty] || colors.dark.mutedForeground;
+  const router = useRouter();
+  const colors = useThemedColors();
+
+  const handlePress = () => {
+    if (onPress) {
+      onPress();
+    } else {
+      router.push({
+        pathname: '/workout/[id]',
+        params: { id },
+      });
+    }
+  };
+
+  const getDifficultyColor = () => {
+    switch (difficulty) {
+      case 'easy':
+        return colors.success;
+      case 'medium':
+        return colors.warning;
+      case 'hard':
+        return colors.error;
+      default:
+        return colors.textSecondary;
+    }
+  };
+
+  const formatDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
 
   return (
-    <View style={cardStyles.card}>
-      <TouchableOpacity
-        style={cardStyles.cardBody}
-        onPress={() => onPlay(workout.id)}
-        activeOpacity={0.7}
-      >
-        <View style={cardStyles.topRow}>
-          <View style={cardStyles.nameRow}>
-            <Text style={cardStyles.workoutName} numberOfLines={1}>
-              {workout.name}
+    <TouchableOpacity
+      style={[styles.container, { backgroundColor: colors.cardBackground, borderColor: colors.cardBorder }]}
+      onPress={handlePress}
+      activeOpacity={0.7}
+    >
+      <View style={styles.header}>
+        <View style={styles.titleContainer}>
+          <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}>
+            {name}
+          </Text>
+          {category && (
+            <View style={[styles.categoryBadge, { backgroundColor: colors.surfaceElevated }]}>
+              <Text style={[styles.categoryText, { color: colors.primary }]}>
+                {category}
+              </Text>
+            </View>
+          )}
+        </View>
+        {difficulty && (
+          <View style={[styles.difficultyBadge, { backgroundColor: getDifficultyColor() + '20' }]}>
+            <Text style={[styles.difficultyText, { color: getDifficultyColor() }]}>
+              {difficulty.toUpperCase()}
             </Text>
-            <View style={[cardStyles.diffBadge, { backgroundColor: diffColor + "22" }]}>
-              <Text style={[cardStyles.diffText, { color: diffColor }]}>
-                {getDifficultyLabel(workout.difficulty)}
-              </Text>
-            </View>
           </View>
-          {!isReorderMode && (
-            <TouchableOpacity
-              onPress={() => onDelete(workout.id)}
-              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-            >
-              <Ionicons name="ellipsis-vertical" size={18} color={colors.dark.mutedForeground} />
-            </TouchableOpacity>
-          )}
-        </View>
+        )}
+      </View>
 
-        <View style={cardStyles.metaRow}>
-          <View style={cardStyles.metaItem}>
-            <Ionicons name="time-outline" size={14} color={colors.dark.mutedForeground} />
-            <Text style={cardStyles.metaText}>{formatDuration(workout.totalDuration)}</Text>
-          </View>
-          {workout.timesCompleted > 0 && (
-            <View style={cardStyles.metaItem}>
-              <Ionicons name="checkmark-circle-outline" size={14} color={colors.dark.mutedForeground} />
-              <Text style={cardStyles.metaText}>
-                {workout.timesCompleted}x
-              </Text>
-            </View>
-          )}
-        </View>
-      </TouchableOpacity>
+      <Text style={[styles.description, { color: colors.textSecondary }]} numberOfLines={2}>
+        {description}
+      </Text>
 
-      {isReorderMode && (
-        <View style={cardStyles.reorderControls}>
-          <TouchableOpacity
-            onPress={() => onMoveUp(workout.id)}
-            disabled={isFirst}
-            style={[cardStyles.reorderBtn, isFirst && cardStyles.reorderBtnDisabled]}
-          >
-            <Ionicons
-              name="chevron-up"
-              size={20}
-              color={isFirst ? colors.dark.surface3 : colors.dark.volt}
-            />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => onMoveDown(workout.id)}
-            disabled={isLast}
-            style={[cardStyles.reorderBtn, isLast && cardStyles.reorderBtnDisabled]}
-          >
-            <Ionicons
-              name="chevron-down"
-              size={20}
-              color={isLast ? colors.dark.surface3 : colors.dark.volt}
-            />
-          </TouchableOpacity>
+      <View style={styles.footer}>
+        <View style={styles.stat}>
+          <Ionicons name="time-outline" size={16} color={colors.textTertiary} />
+          <Text style={[styles.statText, { color: colors.textTertiary }]}>
+            {formatDuration(duration)}
+          </Text>
         </View>
-      )}
-
-      {!isReorderMode && (
-        <TouchableOpacity
-          style={cardStyles.playBtn}
-          onPress={() => onPlay(workout.id)}
-        >
-          <Ionicons name="play" size={22} color={colors.dark.background} />
-        </TouchableOpacity>
-      )}
-    </View>
+        <View style={styles.stat}>
+          <Ionicons name="repeat-outline" size={16} color={colors.textTertiary} />
+          <Text style={[styles.statText, { color: colors.textTertiary }]}>
+            {rounds} {rounds === 1 ? 'round' : 'rounds'}
+          </Text>
+        </View>
+        <View style={styles.spacer} />
+        <Ionicons name="chevron-forward" size={20} color={colors.primary} />
+      </View>
+    </TouchableOpacity>
   );
 }
 
-const cardStyles = StyleSheet.create({
-  card: {
-    flexDirection: "row",
-    backgroundColor: colors.dark.surface1,
-    borderRadius: 14,
+const styles = StyleSheet.create({
+  container: {
+    padding: 16,
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: colors.dark.border,
-    marginBottom: 10,
-    overflow: "hidden",
+    gap: 12,
   },
-  cardBody: {
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  titleContainer: {
     flex: 1,
-    padding: 14,
+    gap: 6,
   },
-  topRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 8,
+  name: {
+    fontSize: 18,
+    fontWeight: '700',
   },
-  nameRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    flex: 1,
-    marginRight: 8,
-  },
-  workoutName: {
-    fontSize: 16,
-    fontWeight: "700" as const,
-    color: colors.dark.foreground,
-    flexShrink: 1,
-  },
-  diffBadge: {
+  categoryBadge: {
+    alignSelf: 'flex-start',
     paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingVertical: 4,
     borderRadius: 6,
   },
-  diffText: {
-    fontSize: 10,
-    fontWeight: "700" as const,
+  categoryText: {
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  metaRow: {
-    flexDirection: "row",
-    gap: 14,
-  },
-  metaItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  metaText: {
-    fontSize: 13,
-    color: colors.dark.mutedForeground,
-  },
-  reorderControls: {
-    justifyContent: "center",
-    alignItems: "center",
+  difficultyBadge: {
     paddingHorizontal: 8,
-    gap: 4,
-    borderLeftWidth: 1,
-    borderLeftColor: colors.dark.border,
+    paddingVertical: 4,
+    borderRadius: 6,
   },
-  reorderBtn: {
-    padding: 4,
+  difficultyText: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
-  reorderBtnDisabled: {
-    opacity: 0.3,
+  description: {
+    fontSize: 14,
+    lineHeight: 20,
   },
-  playBtn: {
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    backgroundColor: colors.dark.volt,
+  footer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  stat: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  statText: {
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  spacer: {
+    flex: 1,
   },
 });
