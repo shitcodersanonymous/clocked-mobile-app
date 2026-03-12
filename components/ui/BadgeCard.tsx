@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import colors, { BADGE_CATEGORY_COLORS_NATIVE } from '@/constants/colors';
+import { useTheme } from "@/contexts/ThemeContext";
 import { formatNumber } from '@/lib/utils';
 
 interface BadgeCardProps {
@@ -46,132 +47,151 @@ export function BadgeCard({
   progress = 0,
   onPress,
 }: BadgeCardProps) {
-  const categoryColors = BADGE_CATEGORY_COLORS_NATIVE[category] || BADGE_CATEGORY_COLORS_NATIVE.streak;
-  const iconName = earned ? getShapeIconFilled(shape) : getShapeIcon(shape);
+  const { theme } = useTheme();
+  const badgeColor = BADGE_CATEGORY_COLORS_NATIVE[category as keyof typeof BADGE_CATEGORY_COLORS_NATIVE] || theme.volt;
+  const icon = earned ? getShapeIconFilled(shape) : getShapeIcon(shape);
 
   return (
     <TouchableOpacity
-      style={styles.container}
+      style={[
+        styles.container,
+        {
+          backgroundColor: theme.surface1,
+          borderColor: earned ? badgeColor + '40' : theme.border,
+        },
+      ]}
       onPress={onPress}
+      disabled={!onPress}
       activeOpacity={0.7}
     >
-      <View style={[
-        styles.iconContainer,
-        { backgroundColor: earned ? categoryColors.bg : colors.dark.surface2 },
-      ]}>
+      <View style={[styles.iconWrap, { backgroundColor: badgeColor + (earned ? '30' : '15') }]}>
         <Ionicons
-          name={iconName}
-          size={24}
-          color={earned ? categoryColors.text : colors.dark.mutedForeground + '66'}
+          name={icon}
+          size={32}
+          color={earned ? badgeColor : theme.mutedForeground}
         />
       </View>
-      <Text
-        style={[
-          styles.name,
-          { color: earned ? colors.dark.foreground : colors.dark.mutedForeground + '80' },
-        ]}
-        numberOfLines={2}
-      >
-        {name}
-      </Text>
-      {earned ? (
-        <Text style={[styles.xp, { color: categoryColors.text }]}>
-          +{formatNumber(xpReward)}
+
+      <View style={styles.info}>
+        <Text style={[styles.name, { color: earned ? theme.foreground : theme.mutedForeground }]}>
+          {name}
         </Text>
-      ) : progress > 0 ? (
-        <View style={styles.progressBarBg}>
-          <View style={[styles.progressBarFill, { width: `${Math.min(progress * 100, 100)}%`, backgroundColor: categoryColors.text }]} />
+        <Text
+          style={[styles.description, { color: theme.mutedForeground }]}
+          numberOfLines={2}
+        >
+          {description}
+        </Text>
+
+        {!earned && progress > 0 && (
+          <View style={styles.progressContainer}>
+            <View style={[styles.progressBarBg, { backgroundColor: theme.surface2 }]}>
+              <View
+                style={[
+                  styles.progressBarFill,
+                  {
+                    width: `${Math.min(100, progress * 100)}%`,
+                    backgroundColor: badgeColor,
+                  },
+                ]}
+              />
+            </View>
+            <Text style={[styles.progressText, { color: theme.mutedForeground }]}>
+              {Math.round(progress * 100)}%
+            </Text>
+          </View>
+        )}
+
+        <View style={styles.footer}>
+          <View style={[styles.xpBadge, { backgroundColor: theme.volt + '1A' }]}>
+            <Ionicons name="flash" size={10} color={theme.volt} />
+            <Text style={[styles.xpText, { color: theme.volt }]}>
+              +{formatNumber(xpReward)} XP
+            </Text>
+          </View>
+          {earned && (
+            <View style={styles.earnedBadge}>
+              <Ionicons name="checkmark-circle" size={12} color={badgeColor} />
+              <Text style={[styles.earnedText, { color: badgeColor }]}>EARNED</Text>
+            </View>
+          )}
         </View>
-      ) : null}
-    </TouchableOpacity>
-  );
-}
-
-export function BadgeCardCompact({
-  name,
-  category,
-  shape,
-  earned,
-}: Pick<BadgeCardProps, 'name' | 'category' | 'shape' | 'earned'>) {
-  const categoryColors = BADGE_CATEGORY_COLORS_NATIVE[category] || BADGE_CATEGORY_COLORS_NATIVE.streak;
-  const iconName = earned ? getShapeIconFilled(shape) : getShapeIcon(shape);
-
-  return (
-    <View style={styles.compactContainer}>
-      <View style={[
-        styles.compactIcon,
-        { backgroundColor: earned ? categoryColors.bg : colors.dark.surface2 },
-      ]}>
-        <Ionicons
-          name={iconName}
-          size={18}
-          color={earned ? categoryColors.text : colors.dark.mutedForeground + '44'}
-        />
       </View>
-      <Text
-        style={[
-          styles.compactName,
-          { color: earned ? colors.dark.foreground : colors.dark.mutedForeground + '50' },
-        ]}
-        numberOfLines={2}
-      >
-        {name}
-      </Text>
-    </View>
+    </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: 'center',
-    gap: 4,
-    padding: 8,
+    flexDirection: 'row',
+    padding: 12,
     borderRadius: 12,
-    width: 72,
+    borderWidth: 1.5,
+    gap: 12,
   },
-  iconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+  iconWrap: {
+    width: 60,
+    height: 60,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  name: {
-    fontSize: 9,
-    lineHeight: 12,
-    textAlign: 'center',
-    fontWeight: '500' as const,
+  info: {
+    flex: 1,
+    justifyContent: 'space-between',
   },
-  xp: {
-    fontSize: 9,
-    fontWeight: '600' as const,
+  name: {
+    fontSize: 15,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  description: {
+    fontSize: 12,
+    lineHeight: 16,
+  },
+  progressContainer: {
+    marginTop: 8,
+    gap: 4,
   },
   progressBarBg: {
-    width: 36,
-    height: 3,
-    borderRadius: 1.5,
-    backgroundColor: colors.dark.surface3,
+    height: 4,
+    borderRadius: 2,
     overflow: 'hidden',
   },
   progressBarFill: {
     height: '100%',
-    borderRadius: 1.5,
+    borderRadius: 2,
   },
-  compactContainer: {
+  progressText: {
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  footer: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
+    marginTop: 8,
+  },
+  xpBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 6,
     gap: 3,
-    width: 56,
   },
-  compactIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+  xpText: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  earnedBadge: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 4,
   },
-  compactName: {
-    fontSize: 8,
-    lineHeight: 10,
-    textAlign: 'center',
+  earnedText: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
 });

@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import colors, { PRESTIGE_COLORS } from '@/constants/colors';
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface XPBarProps {
   prestige: string;
@@ -24,8 +25,9 @@ export function XPBar({
   rankingName,
   prestigeName,
 }: XPBarProps) {
+  const { theme } = useTheme();
   const progress = requiredXP > 0 ? Math.min(1, currentXP / requiredXP) : 0;
-  const barColor = PRESTIGE_COLORS[prestige] || colors.dark.volt;
+  const barColor = PRESTIGE_COLORS[prestige] || theme.volt;
   const displayXP = xpString || `${Math.floor(currentXP).toLocaleString()} / ${requiredXP.toLocaleString()} XP`;
   const isMaxLevel = level >= 100;
 
@@ -45,21 +47,20 @@ export function XPBar({
             )}
             {rankingName && (
               <>
-                <Text style={styles.dot}>·</Text>
-                <Text style={styles.rankingLabel}>{rankingName}</Text>
+                <Text style={[styles.dot, { color: theme.mutedForeground }]}>·</Text>
+                <Text style={[styles.rankLabel, { color: theme.foreground }]}>
+                  {rankingName}
+                </Text>
               </>
             )}
-            <Text style={styles.dot}>·</Text>
-            {isMaxLevel ? (
-              <Text style={[styles.levelLabel, { color: colors.dark.amber }]}>MAX LEVEL</Text>
-            ) : (
-              <Text style={[styles.levelLabel, { color: barColor }]}>Lvl {level}</Text>
-            )}
           </View>
-          <Text style={styles.xpText}>{displayXP}</Text>
+          <Text style={[styles.level, { color: barColor }]}>
+            LVL {level}
+          </Text>
         </View>
       )}
-      <View style={styles.barBackground}>
+
+      <View style={[styles.barContainer, { backgroundColor: theme.surface2 }]}>
         <Animated.View
           style={[
             styles.barFill,
@@ -68,19 +69,30 @@ export function XPBar({
           ]}
         />
       </View>
+
+      {!isMaxLevel && (
+        <Text style={[styles.xpText, { color: theme.mutedForeground }]}>
+          {displayXP}
+        </Text>
+      )}
+      {isMaxLevel && (
+        <Text style={[styles.maxText, { color: barColor }]}>
+          MAX LEVEL
+        </Text>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    width: '100%',
+    gap: 4,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 4,
   },
   labelRow: {
     flexDirection: 'row',
@@ -89,34 +101,38 @@ const styles = StyleSheet.create({
   },
   prestigeLabel: {
     fontSize: 11,
-    fontWeight: '700' as const,
-    letterSpacing: 0.5,
+    fontWeight: '800',
+    letterSpacing: 1,
   },
   dot: {
-    fontSize: 11,
-    color: colors.dark.mutedForeground,
+    fontSize: 12,
   },
-  rankingLabel: {
-    fontSize: 11,
-    fontWeight: '500' as const,
-    color: colors.dark.foreground,
+  rankLabel: {
+    fontSize: 13,
+    fontWeight: '600',
   },
-  levelLabel: {
-    fontSize: 11,
-    fontWeight: '700' as const,
+  level: {
+    fontSize: 15,
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
-  xpText: {
-    fontSize: 11,
-    color: colors.dark.mutedForeground,
-  },
-  barBackground: {
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.dark.surface3,
+  barContainer: {
+    height: 8,
+    borderRadius: 4,
     overflow: 'hidden',
   },
   barFill: {
     height: '100%',
-    borderRadius: 3,
+    borderRadius: 4,
+  },
+  xpText: {
+    fontSize: 11,
+    textAlign: 'center',
+  },
+  maxText: {
+    fontSize: 12,
+    fontWeight: '700',
+    textAlign: 'center',
+    letterSpacing: 1,
   },
 });

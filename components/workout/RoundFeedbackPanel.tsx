@@ -1,6 +1,7 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import colors from '@/constants/colors';
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface RoundFeedbackPanelProps {
   roundNumber: number;
@@ -8,12 +9,13 @@ interface RoundFeedbackPanelProps {
 }
 
 const RATINGS = [
-  { key: 'easy' as const, label: 'Easy', icon: 'chevron-down-circle' as const, color: colors.dark.green },
-  { key: 'perfect' as const, label: 'Perfect', icon: 'checkmark-circle' as const, color: colors.dark.volt },
-  { key: 'hard' as const, label: 'Hard', icon: 'flame' as const, color: colors.dark.red },
+  { key: 'easy' as const, label: 'Easy', icon: 'chevron-down-circle' as const, color: theme.green },
+  { key: 'perfect' as const, label: 'Perfect', icon: 'checkmark-circle' as const, color: theme.volt },
+  { key: 'hard' as const, label: 'Hard', icon: 'flame' as const, color: theme.red },
 ];
 
 export default function RoundFeedbackPanel({ roundNumber, onRate }: RoundFeedbackPanelProps) {
+  const { theme } = useTheme();
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Round {roundNumber}</Text>
@@ -37,19 +39,19 @@ export default function RoundFeedbackPanel({ roundNumber, onRate }: RoundFeedbac
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: colors.dark.surface2,
+    backgroundColor: theme.surface2,
     borderRadius: 16,
     padding: 20,
     alignItems: 'center',
   },
   title: {
-    color: colors.dark.foreground,
+    color: theme.foreground,
     fontSize: 18,
     fontWeight: '700',
     marginBottom: 4,
   },
   subtitle: {
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     fontSize: 14,
     marginBottom: 16,
   },
@@ -64,7 +66,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 12,
     borderWidth: 1,
-    backgroundColor: colors.dark.surface3,
+    backgroundColor: theme.surface3,
     gap: 6,
   },
   buttonLabel: {

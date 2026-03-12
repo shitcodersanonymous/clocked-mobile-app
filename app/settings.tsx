@@ -1,487 +1,29 @@
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  StyleSheet,
-  Text,
   View,
+  Text,
+  StyleSheet,
   ScrollView,
   TouchableOpacity,
   Switch,
   Alert,
   Platform,
-  ActivityIndicator,
 } from 'react-native';
-import { useRouter } from 'expo-router';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
+import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import colors from '@/constants/colors';
+import { useTheme } from '@/contexts/ThemeContext';
 import { useUserStore } from '@/stores/userStore';
-import { useWorkoutStore } from '@/stores/workoutStore';
-import { useTimerStore } from '@/stores/timerStore';
-import { useHistoryStore } from '@/stores/historyStore';
-import { useBadgeStore } from '@/stores/badgeStore';
-import { useGloveStore } from '@/stores/gloveStore';
-import { generateLoadoutWorkout, UserEquipmentConfig } from '@/lib/loadoutGenerator';
-import { formatDuration } from '@/lib/utils';
-import { generateId } from '@/lib/utils';
+import { supabase } from '@/lib/supabase';
+import colors from '@/constants/colors';
 
-const VOICE_TYPES: { value: 'male' | 'female' | 'system'; label: string }[] = [
-  { value: 'system', label: 'System' },
-  { value: 'male', label: 'Male' },
-  { value: 'female', label: 'Female' },
-];
-
-const ROUND_TIME_OPTIONS = [60, 90, 120, 150, 180, 210, 240, 300];
-const REST_TIME_OPTIONS = [30, 45, 60, 90, 120];
-const ROUND_COUNT_OPTIONS = [3, 4, 6, 8, 10, 12, 15];
-
-export default function SettingsScreen() {
-  const router = useRouter();
-  const insets = useSafeAreaInsets();
-  const user = useUserStore((s) => s.user);
-  const updateUser = useUserStore((s) => s.updateUser);
-  const setUser = useUserStore((s) => s.setUser);
-
-  const workouts = useWorkoutStore((s) => s.workouts);
-  const archivedWorkouts = useWorkoutStore((s) => s.archivedWorkouts);
-  const addWorkout = useWorkoutStore((s) => s.addWorkout);
-  const restoreWorkout = useWorkoutStore((s) => s.restoreWorkout);
-  const permanentlyDeleteArchived = useWorkoutStore((s) => s.permanentlyDeleteArchived);
-
-  const timerSettings = useTimerStore((s) => s.settings);
-  const updateTimerSettings = useTimerStore((s) => s.updateSettings);
-
-  const [isRegenerating, setIsRegenerating] = useState(false);
-
-  const preferences = user?.preferences || {
-    voiceType: 'system' as const,
-    soundEnabled: true,
-    voiceAnnouncements: true,
-    voiceCountdown: true,
-    voiceComboCallouts: true,
-    tenSecondWarning: true,
-  };
-
-  const handleTogglePref = (key: string, value: boolean) => {
-    if (!user) return;
-    updateUser({
-      preferences: {
-        ...user.preferences,
-        [key]: value,
-      },
-    });
-  };
-
-  const handleVoiceTypeChange = (voiceType: 'male' | 'female' | 'system') => {
-    if (!user) return;
-    updateUser({
-      preferences: {
-        ...user.preferences,
-        voiceType,
-      },
-    });
-  };
-
-  const handleRegenerateLoadout = () => {
-    if (!user) return;
-    setIsRegenerating(true);
-
-    try {
-      const eq = user.equipment;
-      const loadoutEquipment: UserEquipmentConfig = {
-        gloves: !!eq?.gloves,
-        wraps: !!eq?.wraps,
-        jumpRope: !!eq?.jumpRope,
-        heavyBag: !!eq?.heavyBag,
-        doubleEndBag: !!eq?.doubleEndBag,
-        speedBag: !!eq?.speedBag,
-        treadmill: !!eq?.treadmill,
-        primaryBag: eq?.primaryBag || 'none',
-      };
-
-      const experienceLevel = user.experienceLevel || 'beginner';
-      const loadout = generateLoadoutWorkout(experienceLevel, loadoutEquipment);
-
-      const existingLoadoutIds = workouts
-        .filter((w) => w.tags?.includes('loadout'))
-        .map((w) => w.id);
-
-      existingLoadoutIds.forEach((id) => {
-        useWorkoutStore.getState().deleteWorkout(id);
-      });
-
-      addWorkout({
-        id: generateId(),
-        name: loadout.name,
-        icon: 'fitness',
-        difficulty: loadout.difficulty as any,
-        totalDuration: loadout.duration,
-        isPreset: true,
-        isArchived: false,
-        createdAt: new Date().toISOString(),
-        timesCompleted: 0,
-        sections: {
-          warmup: loadout.phases.filter((p) => p.section === 'warmup'),
-          grind: loadout.phases.filter((p) => p.section === 'grind'),
-          cooldown: loadout.phases.filter((p) => p.section === 'cooldown'),
-        },
-        combos: loadout.combos,
-        tags: loadout.tags,
-      });
-
-      Alert.alert('Loadout Regenerated', 'Your training loadout has been updated.');
-    } catch (err) {
-      Alert.alert('Error', 'Failed to regenerate loadout.');
-    } finally {
-      setIsRegenerating(false);
-    }
-  };
-
-  const handleRestoreWorkout = (id: string) => {
-    restoreWorkout(id);
-  };
-
-  const handlePermanentDelete = (id: string, name: string) => {
-    Alert.alert(
-      'Delete Forever',
-      `Permanently delete "${name}"? This cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => permanentlyDeleteArchived(id),
-        },
-      ]
-    );
-  };
-
-  const handleSignOut = () => {
-    Alert.alert(
-      'Sign Out',
-      'This will sign you out and return you to the start. Your workout data will be kept.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Sign Out',
-          style: 'destructive',
-          onPress: () => {
-            useUserStore.setState({ user: null, hasCompletedOnboarding: false });
-            router.replace('/onboarding');
-          },
-        },
-      ]
-    );
-  };
-
-  const handleResetData = () => {
-    Alert.alert(
-      'Reset All Data',
-      'This will permanently erase your profile, workouts, history, and badges. This cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Reset Everything',
-          style: 'destructive',
-          onPress: async () => {
-            useUserStore.setState({ user: null, hasCompletedOnboarding: false });
-            useWorkoutStore.setState({ workouts: [], archivedWorkouts: [] });
-            useHistoryStore.setState({ completedWorkouts: [] });
-            useBadgeStore.setState({ earnedBadgeIds: [] });
-            useGloveStore.setState({ equippedGlove: 'default' });
-            useTimerStore.getState().resetTimer();
-            await AsyncStorage.removeItem('get-clocked-presets-seeded');
-            router.replace('/onboarding');
-          },
-        },
-      ]
-    );
-  };
-
-  const webTopInset = Platform.OS === 'web' ? 67 : 0;
-
-  return (
-    <View style={styles.container}>
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={[
-          styles.content,
-          { paddingBottom: insets.bottom + 40 + (Platform.OS === 'web' ? 34 : 0) },
-        ]}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Ionicons name="volume-high" size={18} color={colors.dark.volt} />
-            <Text style={styles.sectionTitle}>Sound & Voice</Text>
-          </View>
-          <View style={styles.card}>
-            <SettingToggle
-              label="Voice Announcements"
-              description="Announce segment changes and instructions"
-              icon="megaphone-outline"
-              value={preferences.voiceAnnouncements !== false}
-              onToggle={(v) => handleTogglePref('voiceAnnouncements', v)}
-            />
-            <View style={styles.divider} />
-            <SettingToggle
-              label="Countdown Voice"
-              description="3-second countdown before segment ends"
-              icon="timer-outline"
-              value={preferences.voiceCountdown !== false}
-              onToggle={(v) => handleTogglePref('voiceCountdown', v)}
-            />
-            <View style={styles.divider} />
-            <SettingToggle
-              label="Combo Callouts"
-              description="Call out punch combinations during combos"
-              icon="mic-outline"
-              value={preferences.voiceComboCallouts !== false}
-              onToggle={(v) => handleTogglePref('voiceComboCallouts', v)}
-            />
-            <View style={styles.divider} />
-            <SettingToggle
-              label="10-Second Warning"
-              description="Warning beep at 10 seconds remaining"
-              icon="alarm-outline"
-              value={preferences.tenSecondWarning !== false}
-              onToggle={(v) => handleTogglePref('tenSecondWarning', v)}
-            />
-            <View style={styles.divider} />
-            <SettingToggle
-              label="Sound Effects"
-              description="Bell and audio cues during workouts"
-              icon="musical-notes-outline"
-              value={preferences.soundEnabled !== false}
-              onToggle={(v) => handleTogglePref('soundEnabled', v)}
-            />
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Ionicons name="mic" size={18} color={colors.dark.volt} />
-            <Text style={styles.sectionTitle}>Voice Type</Text>
-          </View>
-          <View style={styles.card}>
-            <View style={styles.voiceTypeRow}>
-              {VOICE_TYPES.map((vt) => (
-                <TouchableOpacity
-                  key={vt.value}
-                  style={[
-                    styles.voiceTypeButton,
-                    preferences.voiceType === vt.value && styles.voiceTypeButtonActive,
-                  ]}
-                  onPress={() => handleVoiceTypeChange(vt.value)}
-                >
-                  <Text
-                    style={[
-                      styles.voiceTypeText,
-                      preferences.voiceType === vt.value && styles.voiceTypeTextActive,
-                    ]}
-                  >
-                    {vt.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Ionicons name="timer" size={18} color={colors.dark.volt} />
-            <Text style={styles.sectionTitle}>Timer Defaults</Text>
-          </View>
-          <View style={styles.card}>
-            <Text style={styles.settingLabel}>Round Time</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.optionScroll}>
-              <View style={styles.optionRow}>
-                {ROUND_TIME_OPTIONS.map((t) => (
-                  <TouchableOpacity
-                    key={t}
-                    style={[
-                      styles.optionPill,
-                      timerSettings.roundTime === t && styles.optionPillActive,
-                    ]}
-                    onPress={() => updateTimerSettings({ roundTime: t })}
-                  >
-                    <Text
-                      style={[
-                        styles.optionPillText,
-                        timerSettings.roundTime === t && styles.optionPillTextActive,
-                      ]}
-                    >
-                      {formatDuration(t)}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </ScrollView>
-
-            <View style={styles.divider} />
-
-            <Text style={styles.settingLabel}>Rest Time</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.optionScroll}>
-              <View style={styles.optionRow}>
-                {REST_TIME_OPTIONS.map((t) => (
-                  <TouchableOpacity
-                    key={t}
-                    style={[
-                      styles.optionPill,
-                      timerSettings.restTime === t && styles.optionPillActive,
-                    ]}
-                    onPress={() => updateTimerSettings({ restTime: t })}
-                  >
-                    <Text
-                      style={[
-                        styles.optionPillText,
-                        timerSettings.restTime === t && styles.optionPillTextActive,
-                      ]}
-                    >
-                      {formatDuration(t)}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </ScrollView>
-
-            <View style={styles.divider} />
-
-            <Text style={styles.settingLabel}>Rounds</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.optionScroll}>
-              <View style={styles.optionRow}>
-                {ROUND_COUNT_OPTIONS.map((r) => (
-                  <TouchableOpacity
-                    key={r}
-                    style={[
-                      styles.optionPill,
-                      timerSettings.rounds === r && styles.optionPillActive,
-                    ]}
-                    onPress={() => updateTimerSettings({ rounds: r })}
-                  >
-                    <Text
-                      style={[
-                        styles.optionPillText,
-                        timerSettings.rounds === r && styles.optionPillTextActive,
-                      ]}
-                    >
-                      {r}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </ScrollView>
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <MaterialCommunityIcons name="boxing-glove" size={18} color={colors.dark.volt} />
-            <Text style={styles.sectionTitle}>Loadout</Text>
-          </View>
-          <TouchableOpacity
-            style={styles.actionCard}
-            onPress={handleRegenerateLoadout}
-            disabled={isRegenerating}
-          >
-            {isRegenerating ? (
-              <ActivityIndicator size="small" color={colors.dark.volt} />
-            ) : (
-              <Ionicons name="refresh" size={20} color={colors.dark.volt} />
-            )}
-            <View style={styles.actionTextContainer}>
-              <Text style={styles.actionTitle}>Regenerate Loadout</Text>
-              <Text style={styles.actionDescription}>
-                Create a new training loadout based on your profile
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.dark.mutedForeground} />
-          </TouchableOpacity>
-        </View>
-
-        {archivedWorkouts.length > 0 && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Ionicons name="archive" size={18} color={colors.dark.volt} />
-              <Text style={styles.sectionTitle}>
-                Archived Workouts ({archivedWorkouts.length})
-              </Text>
-            </View>
-            <View style={styles.card}>
-              {archivedWorkouts.map((workout, index) => (
-                <View key={workout.id}>
-                  {index > 0 && <View style={styles.divider} />}
-                  <View style={styles.archivedRow}>
-                    <View style={styles.archivedInfo}>
-                      <Text style={styles.archivedName} numberOfLines={1}>
-                        {workout.name}
-                      </Text>
-                      <Text style={styles.archivedMeta}>
-                        {formatDuration(workout.totalDuration)}
-                      </Text>
-                    </View>
-                    <View style={styles.archivedActions}>
-                      <TouchableOpacity
-                        style={styles.iconBtn}
-                        onPress={() => handleRestoreWorkout(workout.id)}
-                      >
-                        <Ionicons name="arrow-undo" size={18} color={colors.dark.volt} />
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.iconBtn}
-                        onPress={() => handlePermanentDelete(workout.id, workout.name)}
-                      >
-                        <Ionicons name="trash" size={18} color={colors.dark.red} />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                </View>
-              ))}
-            </View>
-          </View>
-        )}
-
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Ionicons name="person" size={18} color={colors.dark.volt} />
-            <Text style={styles.sectionTitle}>Account</Text>
-          </View>
-          <TouchableOpacity style={styles.actionCard} onPress={handleSignOut}>
-            <Ionicons name="log-out-outline" size={20} color={colors.dark.foreground} />
-            <View style={styles.actionTextContainer}>
-              <Text style={styles.actionTitle}>Sign Out</Text>
-              <Text style={styles.actionDescription}>
-                Return to start — your workout data is kept
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.dark.mutedForeground} />
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Ionicons name="warning" size={18} color={colors.dark.red} />
-            <Text style={[styles.sectionTitle, { color: colors.dark.red }]}>Danger Zone</Text>
-          </View>
-          <TouchableOpacity style={styles.dangerCard} onPress={handleResetData}>
-            <Ionicons name="nuclear" size={22} color={colors.dark.red} />
-            <View style={styles.actionTextContainer}>
-              <Text style={[styles.actionTitle, { color: colors.dark.red }]}>
-                Reset All Data
-              </Text>
-              <Text style={styles.actionDescription}>
-                Erase profile, workouts, history, and badges
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.dark.mutedForeground} />
-          </TouchableOpacity>
-        </View>
-
-        <Text style={styles.versionText}>v1.0.0</Text>
-      </ScrollView>
-    </View>
-  );
+interface SettingToggleProps {
+  label: string;
+  description?: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  value: boolean;
+  onToggle: (value: boolean) => void;
+  iconColor?: string;
 }
 
 function SettingToggle({
@@ -490,29 +32,266 @@ function SettingToggle({
   icon,
   value,
   onToggle,
-}: {
-  label: string;
-  description: string;
-  icon: string;
-  value: boolean;
-  onToggle: (value: boolean) => void;
-}) {
+  iconColor,
+}: SettingToggleProps) {
+  const { theme } = useTheme();
+  
   return (
-    <View style={styles.toggleRow}>
-      <View style={styles.toggleIconBox}>
-        <Ionicons name={icon as any} size={16} color={colors.dark.mutedForeground} />
-      </View>
-      <View style={styles.toggleTextContainer}>
-        <Text style={styles.toggleLabel}>{label}</Text>
-        <Text style={styles.toggleDescription}>{description}</Text>
+    <View style={styles.settingRow}>
+      <View style={styles.settingInfo}>
+        <View style={styles.settingLabelRow}>
+          <Ionicons
+            name={icon}
+            size={18}
+            color={iconColor || theme.textSecondary}
+            style={{ marginRight: 8 }}
+          />
+          <Text style={[styles.settingLabel, { color: theme.text }]}>{label}</Text>
+        </View>
+        {description && (
+          <Text style={[styles.settingDescription, { color: theme.textSecondary }]}>
+            {description}
+          </Text>
+        )}
       </View>
       <Switch
         value={value}
         onValueChange={onToggle}
-        trackColor={{ false: colors.dark.surface3, true: colors.dark.volt }}
-        thumbColor={value ? colors.dark.background : colors.dark.mutedForeground}
-        ios_backgroundColor={colors.dark.surface3}
+        trackColor={{ false: theme.border, true: theme.primary }}
+        thumbColor={value ? theme.text : theme.textMuted}
       />
+    </View>
+  );
+}
+
+export default function SettingsScreen() {
+  const { theme, themeMode, setThemeMode, isDark } = useTheme();
+  const insets = useSafeAreaInsets();
+  const user = useUserStore((state) => state.user);
+  const preferences = useUserStore((state) => state.preferences);
+  const setPreference = useUserStore((state) => state.setPreference);
+
+  const handleTogglePref = async (key: string, value: boolean) => {
+    setPreference(key as any, value);
+  };
+
+  const handleSignOut = async () => {
+    Alert.alert(
+      'Sign Out',
+      'Are you sure you want to sign out?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Sign Out',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await supabase.auth.signOut();
+              router.replace('/onboarding');
+            } catch (error) {
+              console.error('Error signing out:', error);
+              Alert.alert('Error', 'Failed to sign out. Please try again.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleDeleteAccount = async () => {
+    Alert.alert(
+      'Delete Account',
+      'This will permanently delete your account and all data. This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              // TODO: Implement account deletion
+              Alert.alert('Coming Soon', 'Account deletion will be available in a future update.');
+            } catch (error) {
+              console.error('Error deleting account:', error);
+              Alert.alert('Error', 'Failed to delete account. Please try again.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleThemeToggle = (isLight: boolean) => {
+    setThemeMode(isLight ? 'light' : 'dark');
+  };
+
+  return (
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      {/* Header */}
+      <View style={[styles.header, { paddingTop: insets.top + 12, backgroundColor: theme.background }]}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+        >
+          <Ionicons name="chevron-back" size={28} color={theme.text} />
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>Settings</Text>
+        <View style={{ width: 40 }} />
+      </View>
+
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={[
+          styles.content,
+          { paddingBottom: insets.bottom + 40 + (Platform.OS === 'web' ? 34 : 0) },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Appearance Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="color-palette" size={18} color={theme.primary} />
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Appearance</Text>
+          </View>
+          <View style={[styles.card, { backgroundColor: theme.card }]}>
+            <SettingToggle
+              label="Light Mode"
+              description="Switch between light and dark theme"
+              icon="sunny-outline"
+              value={!isDark}
+              onToggle={handleThemeToggle}
+              iconColor={theme.primary}
+            />
+          </View>
+        </View>
+
+        {/* Sound & Voice Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="volume-high" size={18} color={theme.primary} />
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Sound & Voice</Text>
+          </View>
+          <View style={[styles.card, { backgroundColor: theme.card }]}>
+            <SettingToggle
+              label="Voice Announcements"
+              description="Announce segment changes and instructions"
+              icon="megaphone-outline"
+              value={preferences.voiceAnnouncements !== false}
+              onToggle={(v) => handleTogglePref('voiceAnnouncements', v)}
+            />
+            <View style={[styles.divider, { backgroundColor: theme.border }]} />
+            <SettingToggle
+              label="Countdown Voice"
+              description="3-second countdown before segment ends"
+              icon="timer-outline"
+              value={preferences.voiceCountdown !== false}
+              onToggle={(v) => handleTogglePref('voiceCountdown', v)}
+            />
+            <View style={[styles.divider, { backgroundColor: theme.border }]} />
+            <SettingToggle
+              label="Combo Callouts"
+              description="Call out punch combinations during combos"
+              icon="mic-outline"
+              value={preferences.voiceComboCallouts !== false}
+              onToggle={(v) => handleTogglePref('voiceComboCallouts', v)}
+            />
+            <View style={[styles.divider, { backgroundColor: theme.border }]} />
+            <SettingToggle
+              label="Sound Effects"
+              description="Play bell sounds and other audio cues"
+              icon="musical-notes-outline"
+              value={preferences.soundEffects !== false}
+              onToggle={(v) => handleTogglePref('soundEffects', v)}
+            />
+          </View>
+        </View>
+
+        {/* Workout Preferences Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="fitness" size={18} color={theme.primary} />
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Workout Preferences</Text>
+          </View>
+          <View style={[styles.card, { backgroundColor: theme.card }]}>
+            <SettingToggle
+              label="Auto-Start Next Round"
+              description="Automatically start the next round after rest"
+              icon="play-circle-outline"
+              value={preferences.autoStartNextRound !== false}
+              onToggle={(v) => handleTogglePref('autoStartNextRound', v)}
+            />
+            <View style={[styles.divider, { backgroundColor: theme.border }]} />
+            <SettingToggle
+              label="Vibration Feedback"
+              description="Vibrate on round transitions"
+              icon="phone-portrait-outline"
+              value={preferences.vibrationFeedback !== false}
+              onToggle={(v) => handleTogglePref('vibrationFeedback', v)}
+            />
+            <View style={[styles.divider, { backgroundColor: theme.border }]} />
+            <SettingToggle
+              label="Keep Screen Awake"
+              description="Prevent screen from dimming during workouts"
+              icon="eye-outline"
+              value={preferences.keepScreenAwake !== false}
+              onToggle={(v) => handleTogglePref('keepScreenAwake', v)}
+            />
+          </View>
+        </View>
+
+        {/* Account Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="person" size={18} color={theme.primary} />
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Account</Text>
+          </View>
+          <View style={[styles.card, { backgroundColor: theme.card }]}>
+            <TouchableOpacity style={styles.settingRow} onPress={handleSignOut}>
+              <View style={styles.settingInfo}>
+                <View style={styles.settingLabelRow}>
+                  <Ionicons
+                    name="log-out-outline"
+                    size={18}
+                    color={theme.warning}
+                    style={{ marginRight: 8 }}
+                  />
+                  <Text style={[styles.settingLabel, { color: theme.warning }]}>
+                    Sign Out
+                  </Text>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={theme.textMuted} />
+            </TouchableOpacity>
+            <View style={[styles.divider, { backgroundColor: theme.border }]} />
+            <TouchableOpacity style={styles.settingRow} onPress={handleDeleteAccount}>
+              <View style={styles.settingInfo}>
+                <View style={styles.settingLabelRow}>
+                  <Ionicons
+                    name="trash-outline"
+                    size={18}
+                    color={theme.error}
+                    style={{ marginRight: 8 }}
+                  />
+                  <Text style={[styles.settingLabel, { color: theme.error }]}>
+                    Delete Account
+                  </Text>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={theme.textMuted} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* App Info */}
+        <View style={styles.section}>
+          <Text style={[styles.appInfo, { color: theme.textMuted }]}>
+            Clocked v1.0.0
+          </Text>
+          <Text style={[styles.appInfo, { color: theme.textMuted }]}>
+            {user?.email || 'Not signed in'}
+          </Text>
+        </View>
+      </ScrollView>
     </View>
   );
 }
@@ -520,190 +299,77 @@ function SettingToggle({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.dark.background,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '700',
   },
   scrollView: {
     flex: 1,
   },
   content: {
-    paddingHorizontal: 16,
-    paddingTop: 12,
+    paddingHorizontal: 20,
   },
   section: {
-    marginBottom: 24,
+    marginBottom: 32,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 10,
+    marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 15,
-    fontWeight: '700' as const,
-    color: colors.dark.foreground,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
+    fontSize: 16,
+    fontWeight: '700',
+    marginLeft: 8,
   },
   card: {
-    backgroundColor: colors.dark.surface1,
-    borderRadius: 14,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: colors.dark.border,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  settingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+  },
+  settingInfo: {
+    flex: 1,
+    marginRight: 12,
+  },
+  settingLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  settingLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  settingDescription: {
+    fontSize: 13,
+    marginTop: 4,
+    marginLeft: 26,
   },
   divider: {
     height: 1,
-    backgroundColor: colors.dark.surface3,
-    marginVertical: 10,
+    marginHorizontal: 16,
   },
-  toggleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  toggleIconBox: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: colors.dark.surface2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  toggleTextContainer: {
-    flex: 1,
-  },
-  toggleLabel: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-    color: colors.dark.foreground,
-  },
-  toggleDescription: {
-    fontSize: 11,
-    color: colors.dark.mutedForeground,
-    marginTop: 2,
-  },
-  voiceTypeRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  voiceTypeButton: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 10,
-    backgroundColor: colors.dark.surface2,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: colors.dark.border,
-  },
-  voiceTypeButtonActive: {
-    backgroundColor: colors.dark.voltDim,
-    borderColor: colors.dark.volt,
-  },
-  voiceTypeText: {
+  appInfo: {
     fontSize: 13,
-    fontWeight: '600' as const,
-    color: colors.dark.mutedForeground,
-  },
-  voiceTypeTextActive: {
-    color: colors.dark.volt,
-  },
-  settingLabel: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-    color: colors.dark.foreground,
-    marginBottom: 8,
-  },
-  optionScroll: {
-    marginBottom: 4,
-  },
-  optionRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  optionPill: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: colors.dark.surface2,
-    borderWidth: 1,
-    borderColor: colors.dark.border,
-  },
-  optionPillActive: {
-    backgroundColor: colors.dark.voltDim,
-    borderColor: colors.dark.volt,
-  },
-  optionPillText: {
-    fontSize: 13,
-    fontWeight: '600' as const,
-    color: colors.dark.mutedForeground,
-  },
-  optionPillTextActive: {
-    color: colors.dark.volt,
-  },
-  actionCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.dark.surface1,
-    borderRadius: 14,
-    padding: 16,
-    gap: 12,
-    borderWidth: 1,
-    borderColor: colors.dark.border,
-  },
-  actionTextContainer: {
-    flex: 1,
-  },
-  actionTitle: {
-    fontSize: 14,
-    fontWeight: '700' as const,
-    color: colors.dark.foreground,
-  },
-  actionDescription: {
-    fontSize: 11,
-    color: colors.dark.mutedForeground,
-    marginTop: 2,
-  },
-  archivedRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  archivedInfo: {
-    flex: 1,
-  },
-  archivedName: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-    color: colors.dark.foreground,
-  },
-  archivedMeta: {
-    fontSize: 11,
-    color: colors.dark.mutedForeground,
-    marginTop: 2,
-  },
-  archivedActions: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  iconBtn: {
-    padding: 6,
-  },
-  dangerCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.dark.redDim,
-    borderRadius: 14,
-    padding: 16,
-    gap: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 68, 68, 0.3)',
-  },
-  versionText: {
     textAlign: 'center',
-    fontSize: 12,
-    color: colors.dark.mutedForeground,
     marginTop: 8,
-    marginBottom: 20,
   },
 });

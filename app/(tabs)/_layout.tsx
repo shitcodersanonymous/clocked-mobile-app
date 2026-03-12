@@ -4,33 +4,30 @@ import { Platform, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 
+import { useTheme } from "@/contexts/ThemeContext";
 import colors from "@/constants/colors";
 
-const VOLT = colors.dark.volt;
-const INACTIVE = colors.dark.tabIconDefault;
-const BG = colors.dark.background;
-const SURFACE = colors.dark.surface1;
-
 export default function TabLayout() {
+  const { theme, isDark } = useTheme();
   const webTabBarHeight = Platform.OS === "web" ? 84 : undefined;
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: VOLT,
-        tabBarInactiveTintColor: INACTIVE,
+        tabBarActiveTintColor: theme.volt,
+        tabBarInactiveTintColor: theme.tabIconDefault,
         headerShown: true,
-        headerStyle: { backgroundColor: BG },
-        headerTintColor: VOLT,
-        headerTitleStyle: { color: colors.dark.foreground, fontWeight: "700" as const },
+        headerStyle: { backgroundColor: theme.background },
+        headerTintColor: theme.volt,
+        headerTitleStyle: { color: theme.foreground, fontWeight: "700" as const },
         tabBarStyle: {
           position: "absolute" as const,
           backgroundColor: Platform.select({
             ios: "transparent",
-            android: SURFACE,
-            web: SURFACE,
+            android: theme.surface1,
+            web: theme.surface1,
           }),
-          borderTopColor: colors.dark.border,
+          borderTopColor: theme.border,
           borderTopWidth: StyleSheet.hairlineWidth,
           elevation: 0,
           ...(webTabBarHeight ? { height: webTabBarHeight } : {}),
@@ -39,11 +36,11 @@ export default function TabLayout() {
           Platform.OS === "ios" ? (
             <BlurView
               intensity={80}
-              tint="dark"
+              tint={isDark ? "dark" : "light"}
               style={StyleSheet.absoluteFill}
             />
           ) : null,
-        sceneStyle: { backgroundColor: BG },
+        sceneStyle: { backgroundColor: theme.background },
       }}
     >
       <Tabs.Screen

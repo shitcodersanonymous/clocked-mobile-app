@@ -23,6 +23,7 @@ import { formatTime } from '@/lib/utils';
 import { getXPWithinCurrentLevel, Prestige } from '@/lib/xpSystem';
 import VerticalXPBar from '@/components/ui/VerticalXPBar';
 import colors from '@/constants/colors';
+import { useTheme } from "@/contexts/ThemeContext";
 import {
   ARC_SIZE,
   ARC_GLOW_STROKE,
@@ -47,6 +48,7 @@ interface ArcTimerProps {
 }
 
 export default function ArcTimer({
+  const { theme } = useTheme();
   arcProgressSV,
   accentColor,
   timeRemaining,
@@ -84,7 +86,7 @@ export default function ArcTimer({
             cy={ARC_SIZE / 2}
             r={ARC_R}
             fill="none"
-            stroke={colors.dark.surface3}
+            stroke={theme.surface3}
             strokeWidth={ARC_STROKE_WIDTH}
             strokeDasharray={`${ARC_LEN} ${GAP_LEN}`}
             strokeDashoffset={ARC_START_OFFSET}

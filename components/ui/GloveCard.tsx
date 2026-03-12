@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import colors from '@/constants/colors';
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface GloveCardProps {
   name: string;
@@ -15,6 +16,7 @@ interface GloveCardProps {
 }
 
 export function GloveCard({
+  const { theme } = useTheme();
   name,
   description,
   tierThemeColor,
@@ -28,7 +30,7 @@ export function GloveCard({
       style={[
         styles.container,
         unlocked && { borderColor: tierThemeColor + '44' },
-        equipped && { borderColor: colors.dark.volt, borderWidth: 2 },
+        equipped && { borderColor: theme.volt, borderWidth: 2 },
       ]}
       onPress={onPress}
       activeOpacity={unlocked ? 0.7 : 1}
@@ -39,13 +41,13 @@ export function GloveCard({
         {
           backgroundColor: unlocked
             ? tierThemeColor + '22'
-            : colors.dark.surface2,
+            : theme.surface2,
         },
       ]}>
         <Ionicons
           name={unlocked ? 'hand-left' : 'lock-closed'}
           size={24}
-          color={unlocked ? tierThemeColor : colors.dark.mutedForeground + '44'}
+          color={unlocked ? tierThemeColor : theme.mutedForeground + '44'}
         />
       </View>
 
@@ -54,7 +56,7 @@ export function GloveCard({
           <Text
             style={[
               styles.name,
-              { color: unlocked ? colors.dark.foreground : colors.dark.mutedForeground + '66' },
+              { color: unlocked ? theme.foreground : theme.mutedForeground + '66' },
             ]}
             numberOfLines={1}
           >
@@ -69,7 +71,7 @@ export function GloveCard({
         <Text
           style={[
             styles.description,
-            { color: unlocked ? colors.dark.mutedForeground : colors.dark.mutedForeground + '44' },
+            { color: unlocked ? theme.mutedForeground : theme.mutedForeground + '44' },
           ]}
           numberOfLines={1}
         >
@@ -90,9 +92,9 @@ const styles = StyleSheet.create({
     gap: 12,
     padding: 12,
     borderRadius: 14,
-    backgroundColor: colors.dark.surface1,
+    backgroundColor: theme.surface1,
     borderWidth: 1,
-    borderColor: colors.dark.border,
+    borderColor: theme.border,
   },
   iconWrap: {
     width: 48,
@@ -116,7 +118,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   equippedBadge: {
-    backgroundColor: colors.dark.voltDim,
+    backgroundColor: theme.voltDim,
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
@@ -124,7 +126,7 @@ const styles = StyleSheet.create({
   equippedText: {
     fontSize: 9,
     fontWeight: '700' as const,
-    color: colors.dark.volt,
+    color: theme.volt,
     letterSpacing: 0.5,
   },
   description: {
@@ -132,7 +134,7 @@ const styles = StyleSheet.create({
   },
   unlockText: {
     fontSize: 10,
-    color: colors.dark.mutedForeground + '88',
+    color: theme.mutedForeground + '88',
     fontStyle: 'italic',
   },
 });

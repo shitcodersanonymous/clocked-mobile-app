@@ -12,7 +12,9 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import colors from '@/constants/colors';
+import { useTheme } from "@/contexts/ThemeContext";
 import { PRESTIGE_COLORS } from '@/constants/colors';
+import { useTheme } from "@/contexts/ThemeContext";
 import { Prestige, PRESTIGE_NAMES, getRankingFromLevel, RANKING_NAMES } from '@/lib/xpSystem';
 
 interface LevelUpOverlayProps {
@@ -22,11 +24,12 @@ interface LevelUpOverlayProps {
 }
 
 export function LevelUpOverlay({ level, prestige, onDismiss }: LevelUpOverlayProps) {
+  const { theme } = useTheme();
   const flashOpacity = useSharedValue(0);
   const iconScale = useSharedValue(0.3);
   const textScale = useSharedValue(0);
 
-  const tierColor = PRESTIGE_COLORS[prestige] || colors.dark.volt;
+  const tierColor = PRESTIGE_COLORS[prestige] || theme.volt;
   const ranking = getRankingFromLevel(level);
   const rankName = RANKING_NAMES[ranking];
 
@@ -125,7 +128,7 @@ const styles = StyleSheet.create({
   levelNumber: {
     fontSize: 22,
     fontWeight: '700' as const,
-    color: colors.dark.foreground,
+    color: theme.foreground,
   },
   rankText: {
     fontSize: 14,
@@ -137,11 +140,11 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingHorizontal: 28,
     paddingVertical: 10,
-    backgroundColor: colors.dark.surface2,
+    backgroundColor: theme.surface2,
     borderRadius: 12,
   },
   dismissText: {
-    color: colors.dark.foreground,
+    color: theme.foreground,
     fontSize: 14,
     fontWeight: '600' as const,
   },

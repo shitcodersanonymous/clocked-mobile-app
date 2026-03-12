@@ -12,7 +12,9 @@ import {
 import Svg, { Path, Circle as SvgCircle } from 'react-native-svg';
 import { Ionicons } from '@expo/vector-icons';
 import colors from '@/constants/colors';
+import { useTheme } from "@/contexts/ThemeContext";
 import { BADGE_CATEGORY_COLORS_NATIVE } from '@/constants/colors';
+import { useTheme } from "@/contexts/ThemeContext";
 import {
   ALL_BADGES_COMBINED,
   ALL_BADGE_CATEGORY_NAMES,
@@ -163,8 +165,8 @@ function BadgeItem({
   onPress: () => void;
 }) {
   const catColor = getCategoryColor(badge.category);
-  const fill = earned ? catColor.text : colors.dark.surface3;
-  const stroke = earned ? catColor.text : colors.dark.border;
+  const fill = earned ? catColor.text : theme.surface3;
+  const stroke = earned ? catColor.text : theme.border;
 
   return (
     <TouchableOpacity
@@ -176,7 +178,7 @@ function BadgeItem({
         <BadgeShapeIcon
           shape={badge.shape}
           size={BADGE_SIZE}
-          fill={earned ? fill : colors.dark.surface3}
+          fill={earned ? fill : theme.surface3}
           stroke={stroke}
           opacity={earned ? 1 : 0.4}
         />
@@ -207,6 +209,7 @@ interface BadgeCollectionProps {
 }
 
 export default function BadgeCollection({ stats }: BadgeCollectionProps) {
+  const { theme } = useTheme();
   const { earnedBadgeIds, badgeStats } = useBadgeStore();
   const [selectedCategory, setSelectedCategory] = useState<string>(ALL_FILTER);
   const [selectedBadge, setSelectedBadge] = useState<AnyBadge | null>(null);
@@ -276,7 +279,7 @@ export default function BadgeCollection({ stats }: BadgeCollectionProps) {
       >
         {categories.map((cat) => {
           const isActive = cat === selectedCategory;
-          const catColor = cat === ALL_FILTER ? { bg: colors.dark.voltDim, text: colors.dark.volt } : getCategoryColor(cat);
+          const catColor = cat === ALL_FILTER ? { bg: theme.voltDim, text: theme.volt } : getCategoryColor(cat);
           return (
             <TouchableOpacity
               key={cat}
@@ -329,15 +332,15 @@ export default function BadgeCollection({ stats }: BadgeCollectionProps) {
                   style={styles.modalClose}
                   onPress={() => setSelectedBadge(null)}
                 >
-                  <Ionicons name="close" size={24} color={colors.dark.mutedForeground} />
+                  <Ionicons name="close" size={24} color={theme.mutedForeground} />
                 </TouchableOpacity>
 
                 <View style={styles.modalBadgeWrap}>
                   <BadgeShapeIcon
                     shape={selectedBadge.shape}
                     size={96}
-                    fill={selectedBadgeEarned ? selectedCatColor.text : colors.dark.surface3}
-                    stroke={selectedBadgeEarned ? selectedCatColor.text : colors.dark.border}
+                    fill={selectedBadgeEarned ? selectedCatColor.text : theme.surface3}
+                    stroke={selectedBadgeEarned ? selectedCatColor.text : theme.border}
                     opacity={selectedBadgeEarned ? 1 : 0.5}
                   />
                 </View>
@@ -353,7 +356,7 @@ export default function BadgeCollection({ stats }: BadgeCollectionProps) {
                 <Text style={styles.modalDescription}>{selectedBadge.description}</Text>
 
                 <View style={styles.modalXpRow}>
-                  <Ionicons name="flash" size={16} color={colors.dark.volt} />
+                  <Ionicons name="flash" size={16} color={theme.volt} />
                   <Text style={styles.modalXpText}>+{selectedBadge.xpReward.toLocaleString()} XP</Text>
                 </View>
 
@@ -378,7 +381,7 @@ export default function BadgeCollection({ stats }: BadgeCollectionProps) {
 
                 {selectedBadgeEarned && (
                   <View style={styles.modalEarnedBanner}>
-                    <Ionicons name="checkmark-circle" size={20} color={colors.dark.green} />
+                    <Ionicons name="checkmark-circle" size={20} color={theme.green} />
                     <Text style={styles.modalEarnedText}>Earned</Text>
                   </View>
                 )}
@@ -405,12 +408,12 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: colors.dark.foreground,
+    color: theme.foreground,
   },
   headerCount: {
     fontSize: 14,
     fontWeight: '600',
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
   },
   filterScroll: {
     maxHeight: 44,
@@ -424,14 +427,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 16,
-    backgroundColor: colors.dark.surface2,
+    backgroundColor: theme.surface2,
     borderWidth: 1,
-    borderColor: colors.dark.border,
+    borderColor: theme.border,
   },
   filterText: {
     fontSize: 13,
     fontWeight: '600',
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
   },
   gridContainer: {
     paddingHorizontal: 16,
@@ -456,12 +459,12 @@ const styles = StyleSheet.create({
   badgeName: {
     fontSize: 10,
     fontWeight: '600',
-    color: colors.dark.foreground,
+    color: theme.foreground,
     textAlign: 'center',
     lineHeight: 13,
   },
   badgeNameLocked: {
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     opacity: 0.6,
   },
   progressBarContainer: {
@@ -470,7 +473,7 @@ const styles = StyleSheet.create({
     left: 8,
     right: 8,
     height: 3,
-    backgroundColor: colors.dark.surface2,
+    backgroundColor: theme.surface2,
     borderRadius: 1.5,
     overflow: 'hidden',
   },
@@ -485,7 +488,7 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     borderWidth: 1.5,
-    borderColor: colors.dark.background,
+    borderColor: theme.background,
   },
   modalOverlay: {
     flex: 1,
@@ -495,12 +498,12 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     width: SCREEN_WIDTH - 64,
-    backgroundColor: colors.dark.surface2,
+    backgroundColor: theme.surface2,
     borderRadius: 20,
     padding: 24,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: colors.dark.border,
+    borderColor: theme.border,
   },
   modalClose: {
     position: 'absolute',
@@ -515,7 +518,7 @@ const styles = StyleSheet.create({
   modalBadgeName: {
     fontSize: 22,
     fontWeight: '700',
-    color: colors.dark.foreground,
+    color: theme.foreground,
     textAlign: 'center',
     marginBottom: 8,
   },
@@ -531,7 +534,7 @@ const styles = StyleSheet.create({
   },
   modalDescription: {
     fontSize: 14,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     textAlign: 'center',
     marginBottom: 16,
     lineHeight: 20,
@@ -545,7 +548,7 @@ const styles = StyleSheet.create({
   modalXpText: {
     fontSize: 16,
     fontWeight: '700',
-    color: colors.dark.volt,
+    color: theme.volt,
   },
   modalProgressSection: {
     width: '100%',
@@ -556,7 +559,7 @@ const styles = StyleSheet.create({
   modalProgressBar: {
     flex: 1,
     height: 6,
-    backgroundColor: colors.dark.surface3,
+    backgroundColor: theme.surface3,
     borderRadius: 3,
     overflow: 'hidden',
   },
@@ -567,7 +570,7 @@ const styles = StyleSheet.create({
   modalProgressText: {
     fontSize: 13,
     fontWeight: '600',
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     width: 40,
     textAlign: 'right',
   },
@@ -575,7 +578,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: colors.dark.greenDim,
+    backgroundColor: theme.greenDim,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 12,
@@ -583,6 +586,6 @@ const styles = StyleSheet.create({
   modalEarnedText: {
     fontSize: 14,
     fontWeight: '700',
-    color: colors.dark.green,
+    color: theme.green,
   },
 });

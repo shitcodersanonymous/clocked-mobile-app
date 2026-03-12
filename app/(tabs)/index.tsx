@@ -12,6 +12,7 @@ import { useRouter, Redirect } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons, MaterialCommunityIcons, Feather } from "@expo/vector-icons";
 import colors from "@/constants/colors";
+import { useTheme } from "@/contexts/ThemeContext";
 import { useUserStore } from "@/stores/userStore";
 import { useWorkoutStore } from "@/stores/workoutStore";
 import { Workout } from "@/lib/types";
@@ -30,6 +31,7 @@ export default function HomeScreen() {
   const [isReorderMode, setIsReorderMode] = useState(false);
   const [localOrder, setLocalOrder] = useState<string[]>([]);
   const [previewWorkout, setPreviewWorkout] = useState<Workout | null>(null);
+  const { theme } = useTheme();
 
   const activeWorkouts = workouts.filter((w) => !w.isArchived);
 
@@ -141,13 +143,13 @@ export default function HomeScreen() {
             activeOpacity={0.7}
             onPress={() => router.push("/build")}
           >
-            <Ionicons name="add" size={22} color={colors.dark.volt} />
+            <Ionicons name="add" size={22} color={theme.volt} />
             <View style={styles.actionCardTextWrap}>
               <Text style={styles.actionCardTitle}>CREATE</Text>
               <Text style={styles.actionCardSub}>SET</Text>
             </View>
             <View style={styles.actionCardBgIcon}>
-              <Ionicons name="add" size={72} color={colors.dark.mutedForeground} style={{ opacity: 0.08 }} />
+              <Ionicons name="add" size={72} color={theme.mutedForeground} style={{ opacity: 0.08 }} />
             </View>
           </TouchableOpacity>
 
@@ -156,13 +158,13 @@ export default function HomeScreen() {
             activeOpacity={0.7}
             onPress={() => router.push("/history")}
           >
-            <Ionicons name="time" size={22} color={colors.dark.volt} />
+            <Ionicons name="time" size={22} color={theme.volt} />
             <View style={styles.actionCardTextWrap}>
               <Text style={styles.actionCardTitle}>WORKOUT</Text>
               <Text style={styles.actionCardSub}>LOG</Text>
             </View>
             <View style={styles.actionCardBgIcon}>
-              <Ionicons name="time" size={72} color={colors.dark.mutedForeground} style={{ opacity: 0.08 }} />
+              <Ionicons name="time" size={72} color={theme.mutedForeground} style={{ opacity: 0.08 }} />
             </View>
           </TouchableOpacity>
         </View>
@@ -173,25 +175,25 @@ export default function HomeScreen() {
             (isReorderMode ? (
               <View style={styles.reorderActions}>
                 <TouchableOpacity onPress={handleCancelReorder} style={styles.reorderActionBtn}>
-                  <Ionicons name="close" size={18} color={colors.dark.mutedForeground} />
+                  <Ionicons name="close" size={18} color={theme.mutedForeground} />
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={handleSaveOrder}
                   style={[styles.reorderActionBtn, styles.reorderSaveBtn]}
                 >
-                  <Ionicons name="checkmark" size={18} color={colors.dark.volt} />
+                  <Ionicons name="checkmark" size={18} color={theme.volt} />
                 </TouchableOpacity>
               </View>
             ) : (
               <TouchableOpacity onPress={handleStartReorder} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                <MaterialCommunityIcons name="drag-vertical" size={20} color={colors.dark.mutedForeground} />
+                <MaterialCommunityIcons name="drag-vertical" size={20} color={theme.mutedForeground} />
               </TouchableOpacity>
             ))}
         </View>
 
         {activeWorkouts.length === 0 ? (
           <View style={styles.emptyState}>
-            <Feather name="inbox" size={36} color={colors.dark.mutedForeground} />
+            <Feather name="inbox" size={36} color={theme.mutedForeground} />
             <Text style={styles.emptyText}>No workouts yet</Text>
             <TouchableOpacity
               style={styles.emptyButton}
@@ -237,7 +239,7 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.dark.background,
+    backgroundColor: theme.background,
   },
   scrollView: {
     flex: 1,
@@ -255,12 +257,12 @@ const styles = StyleSheet.create({
   headerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: colors.dark.voltMuted,
+    backgroundColor: theme.voltMuted,
   },
   logoText: {
     fontSize: 26,
     fontWeight: "900" as const,
-    color: colors.dark.foreground,
+    color: theme.foreground,
     letterSpacing: 6,
   },
   actionCardsRow: {
@@ -271,13 +273,13 @@ const styles = StyleSheet.create({
   actionCard: {
     flex: 1,
     height: 130,
-    backgroundColor: colors.dark.surface1,
+    backgroundColor: theme.surface1,
     borderRadius: 16,
     padding: 16,
     justifyContent: "space-between",
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: colors.dark.border,
+    borderColor: theme.border,
   },
   actionCardTextWrap: {
     zIndex: 1,
@@ -285,11 +287,11 @@ const styles = StyleSheet.create({
   actionCardTitle: {
     fontSize: 16,
     fontWeight: "900" as const,
-    color: colors.dark.foreground,
+    color: theme.foreground,
   },
   actionCardSub: {
     fontSize: 12,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     marginTop: 1,
   },
   actionCardBgIcon: {
@@ -306,7 +308,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 12,
     fontWeight: "700" as const,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     letterSpacing: 1.5,
   },
   reorderActions: {
@@ -318,36 +320,36 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: colors.dark.surface2,
+    backgroundColor: theme.surface2,
     alignItems: "center",
     justifyContent: "center",
   },
   reorderSaveBtn: {
-    backgroundColor: colors.dark.voltDim,
+    backgroundColor: theme.voltDim,
   },
   emptyState: {
     borderRadius: 16,
     borderWidth: 2,
     borderStyle: "dashed",
-    borderColor: colors.dark.surface3,
+    borderColor: theme.surface3,
     paddingVertical: 40,
     paddingHorizontal: 24,
     alignItems: "center",
     gap: 12,
   },
   emptyText: {
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     fontSize: 15,
   },
   emptyButton: {
-    backgroundColor: colors.dark.volt,
+    backgroundColor: theme.volt,
     paddingHorizontal: 24,
     paddingVertical: 12,
     borderRadius: 12,
     marginTop: 4,
   },
   emptyButtonText: {
-    color: colors.dark.background,
+    color: theme.background,
     fontWeight: "700" as const,
     fontSize: 14,
   },

@@ -12,6 +12,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import colors, { PRESTIGE_COLORS, BADGE_CATEGORY_COLORS_NATIVE } from '@/constants/colors';
+import { useTheme } from "@/contexts/ThemeContext";
 import { useUserStore } from '@/stores/userStore';
 import { useBadgeStore } from '@/stores/badgeStore';
 import BadgeCollection from '@/components/BadgeCollection';
@@ -44,6 +45,7 @@ import {
 } from '@/data/badges';
 
 export default function ProfileScreen() {
+  const { theme } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const webTopInset = Platform.OS === 'web' ? 67 : 0;
@@ -123,7 +125,7 @@ export default function ProfileScreen() {
             onPress={() => setShowBadgeCollection(false)}
             style={styles.settingsBtn}
           >
-            <Ionicons name="close" size={22} color={colors.dark.mutedForeground} />
+            <Ionicons name="close" size={22} color={theme.mutedForeground} />
           </TouchableOpacity>
         </View>
         <BadgeCollection />
@@ -140,13 +142,13 @@ export default function ProfileScreen() {
             onPress={() => router.push('/edit-profile')}
             style={styles.settingsBtn}
           >
-            <Ionicons name="create-outline" size={22} color={colors.dark.mutedForeground} />
+            <Ionicons name="create-outline" size={22} color={theme.mutedForeground} />
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => router.push('/settings')}
             style={styles.settingsBtn}
           >
-            <Ionicons name="settings-outline" size={22} color={colors.dark.mutedForeground} />
+            <Ionicons name="settings-outline" size={22} color={theme.mutedForeground} />
           </TouchableOpacity>
         </View>
       </View>
@@ -159,8 +161,8 @@ export default function ProfileScreen() {
         <View style={styles.profileSection}>
           <View style={styles.avatarRow}>
             <View style={styles.avatarContainer}>
-              <View style={[styles.avatar, { borderColor: PRESTIGE_COLORS[prestige] || colors.dark.volt }]}>
-                <Ionicons name="person" size={32} color={PRESTIGE_COLORS[prestige] || colors.dark.volt} />
+              <View style={[styles.avatar, { borderColor: PRESTIGE_COLORS[prestige] || theme.volt }]}>
+                <Ionicons name="person" size={32} color={PRESTIGE_COLORS[prestige] || theme.volt} />
               </View>
             </View>
             <View style={styles.profileInfo}>
@@ -203,9 +205,9 @@ export default function ProfileScreen() {
             onPress={() => router.push('/gloves')}
             style={styles.gloveCounter}
           >
-            <Ionicons name="layers-outline" size={14} color={colors.dark.mutedForeground} />
+            <Ionicons name="layers-outline" size={14} color={theme.mutedForeground} />
             <Text style={styles.gloveCounterText}>{unlockedGloves.length}/52 Gloves</Text>
-            <Ionicons name="chevron-forward" size={14} color={colors.dark.mutedForeground} />
+            <Ionicons name="chevron-forward" size={14} color={theme.mutedForeground} />
           </TouchableOpacity>
         </View>
 
@@ -214,25 +216,25 @@ export default function ProfileScreen() {
             label="Workouts"
             value={workoutsCount}
             icon="fitness"
-            iconColor={colors.dark.volt}
+            iconColor={theme.volt}
           />
           <StatCard
             label="Day Streak"
             value={currentStreak}
             icon="flame"
-            iconColor={colors.dark.orange}
+            iconColor={theme.orange}
           />
           <StatCard
             label="Total Time"
             value={formatDuration(totalTrainingSeconds)}
             icon="time"
-            iconColor={colors.dark.blue}
+            iconColor={theme.blue}
           />
         </View>
 
         <View style={styles.streakCard}>
           <View style={styles.streakHeader}>
-            <Ionicons name="trophy" size={18} color={colors.dark.amber} />
+            <Ionicons name="trophy" size={18} color={theme.amber} />
             <Text style={styles.streakTitle}>Best Streak</Text>
           </View>
           <Text style={styles.streakValue}>{longestStreak}</Text>
@@ -247,7 +249,7 @@ export default function ProfileScreen() {
           >
             <View style={styles.prestigeBannerContent}>
               <View style={styles.prestigeBannerIcon}>
-                <MaterialCommunityIcons name="arrow-up-bold-circle" size={28} color={colors.dark.amber} />
+                <MaterialCommunityIcons name="arrow-up-bold-circle" size={28} color={theme.amber} />
               </View>
               <View style={styles.prestigeBannerText}>
                 <Text style={styles.prestigeBannerTitle}>Prestige Available</Text>
@@ -255,7 +257,7 @@ export default function ProfileScreen() {
                   Advance to {PRESTIGE_NAMES[getNextPrestige(prestige) || prestige]} tier
                 </Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color={colors.dark.amber} />
+              <Ionicons name="chevron-forward" size={20} color={theme.amber} />
             </View>
           </TouchableOpacity>
         )}
@@ -280,9 +282,9 @@ export default function ProfileScreen() {
             onPress={() => setShowBadgeCollection(true)}
             activeOpacity={0.7}
           >
-            <Ionicons name="grid-outline" size={16} color={colors.dark.volt} />
+            <Ionicons name="grid-outline" size={16} color={theme.volt} />
             <Text style={styles.viewAllBadgesText}>View All Badges</Text>
-            <Ionicons name="chevron-forward" size={16} color={colors.dark.volt} />
+            <Ionicons name="chevron-forward" size={16} color={theme.volt} />
           </TouchableOpacity>
         </View>
 
@@ -338,15 +340,15 @@ function PrestigePromptScreen({
   const webTopInset = Platform.OS === 'web' ? 67 : 0;
   const changes = getPrestigeChanges(prestige);
   const nextPrestige = changes?.nextTier || prestige;
-  const nextColor = PRESTIGE_COLORS[nextPrestige] || colors.dark.volt;
-  const currentColor = PRESTIGE_COLORS[prestige] || colors.dark.volt;
+  const nextColor = PRESTIGE_COLORS[nextPrestige] || theme.volt;
+  const currentColor = PRESTIGE_COLORS[prestige] || theme.volt;
 
   return (
     <View style={[styles.container, { paddingTop: Platform.OS === 'web' ? webTopInset : insets.top }]}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Prestige</Text>
         <TouchableOpacity onPress={onDefer} style={styles.settingsBtn}>
-          <Ionicons name="close" size={22} color={colors.dark.mutedForeground} />
+          <Ionicons name="close" size={22} color={theme.mutedForeground} />
         </TouchableOpacity>
       </View>
       <View style={prestigeStyles.container}>
@@ -400,7 +402,7 @@ function PrestigePromptScreen({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.dark.background,
+    backgroundColor: theme.background,
   },
   header: {
     flexDirection: 'row',
@@ -409,18 +411,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.dark.border,
+    borderBottomColor: theme.border,
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: '700' as const,
-    color: colors.dark.foreground,
+    color: theme.foreground,
   },
   settingsBtn: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: colors.dark.surface1,
+    backgroundColor: theme.surface1,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -445,7 +447,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: colors.dark.surface2,
+    backgroundColor: theme.surface2,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
@@ -457,7 +459,7 @@ const styles = StyleSheet.create({
   profileName: {
     fontSize: 22,
     fontWeight: '700' as const,
-    color: colors.dark.foreground,
+    color: theme.foreground,
   },
   roleRow: {
     flexDirection: 'row',
@@ -467,12 +469,12 @@ const styles = StyleSheet.create({
   roleLabel: {
     fontSize: 11,
     fontWeight: '700' as const,
-    color: colors.dark.volt,
+    color: theme.volt,
     letterSpacing: 0.5,
   },
   roleDot: {
     fontSize: 11,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
   },
   gloveTag: {
     flexDirection: 'row',
@@ -488,7 +490,7 @@ const styles = StyleSheet.create({
   },
   gloveName: {
     fontSize: 11,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
   },
   prestigeRow: {
     flexDirection: 'row',
@@ -497,7 +499,7 @@ const styles = StyleSheet.create({
   },
   totalXPText: {
     fontSize: 13,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
   },
   gloveCounter: {
     flexDirection: 'row',
@@ -507,7 +509,7 @@ const styles = StyleSheet.create({
   },
   gloveCounterText: {
     fontSize: 12,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     flex: 1,
   },
   statsRow: {
@@ -516,12 +518,12 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   streakCard: {
-    backgroundColor: colors.dark.surface1,
+    backgroundColor: theme.surface1,
     borderRadius: 16,
     padding: 16,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: colors.dark.border,
+    borderColor: theme.border,
     marginBottom: 16,
   },
   streakHeader: {
@@ -533,16 +535,16 @@ const styles = StyleSheet.create({
   streakTitle: {
     fontSize: 13,
     fontWeight: '600' as const,
-    color: colors.dark.foreground,
+    color: theme.foreground,
   },
   streakValue: {
     fontSize: 36,
     fontWeight: '700' as const,
-    color: colors.dark.amber,
+    color: theme.amber,
   },
   streakSubtitle: {
     fontSize: 11,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     marginTop: 2,
   },
   prestigeBanner: {
@@ -565,19 +567,19 @@ const styles = StyleSheet.create({
   prestigeBannerTitle: {
     fontSize: 15,
     fontWeight: '700' as const,
-    color: colors.dark.amber,
+    color: theme.amber,
   },
   prestigeBannerSub: {
     fontSize: 12,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     marginTop: 2,
   },
   badgesSection: {
-    backgroundColor: colors.dark.surface1,
+    backgroundColor: theme.surface1,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: colors.dark.border,
+    borderColor: theme.border,
   },
   viewAllBadgesBtn: {
     flexDirection: 'row',
@@ -587,14 +589,14 @@ const styles = StyleSheet.create({
     marginTop: 14,
     paddingVertical: 12,
     borderRadius: 12,
-    backgroundColor: colors.dark.voltDim,
+    backgroundColor: theme.voltDim,
     borderWidth: 1,
     borderColor: 'rgba(204,255,0,0.2)',
   },
   viewAllBadgesText: {
     fontSize: 14,
     fontWeight: '600' as const,
-    color: colors.dark.volt,
+    color: theme.volt,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -605,11 +607,11 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '700' as const,
-    color: colors.dark.foreground,
+    color: theme.foreground,
   },
   sectionCount: {
     fontSize: 13,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
   },
 });
 
@@ -644,7 +646,7 @@ const badgeStyles = StyleSheet.create({
   categoryName: {
     fontSize: 13,
     fontWeight: '600' as const,
-    color: colors.dark.foreground,
+    color: theme.foreground,
   },
   categoryCount: {
     fontSize: 12,
@@ -653,7 +655,7 @@ const badgeStyles = StyleSheet.create({
   barBg: {
     height: 4,
     borderRadius: 2,
-    backgroundColor: colors.dark.surface3,
+    backgroundColor: theme.surface3,
     overflow: 'hidden',
   },
   barFill: {
@@ -676,21 +678,21 @@ const prestigeStyles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '700' as const,
-    color: colors.dark.foreground,
+    color: theme.foreground,
   },
   subtitle: {
     fontSize: 15,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     textAlign: 'center',
     lineHeight: 22,
   },
   changeCard: {
     width: '100%',
-    backgroundColor: colors.dark.surface1,
+    backgroundColor: theme.surface1,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: colors.dark.border,
+    borderColor: theme.border,
     marginTop: 8,
   },
   changeRow: {
@@ -701,20 +703,20 @@ const prestigeStyles = StyleSheet.create({
   },
   changeLabel: {
     fontSize: 14,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
   },
   changeValue: {
     fontSize: 14,
     fontWeight: '700' as const,
-    color: colors.dark.foreground,
+    color: theme.foreground,
   },
   divider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.dark.border,
+    backgroundColor: theme.border,
   },
   warning: {
     fontSize: 12,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     textAlign: 'center',
     marginTop: 4,
   },
@@ -728,13 +730,13 @@ const prestigeStyles = StyleSheet.create({
   prestigeBtnText: {
     fontSize: 16,
     fontWeight: '700' as const,
-    color: colors.dark.background,
+    color: theme.background,
   },
   deferBtn: {
     paddingVertical: 12,
   },
   deferBtnText: {
     fontSize: 14,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
   },
 });

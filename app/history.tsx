@@ -51,9 +51,9 @@ const FOCUS_AREA_ICONS: Record<string, string> = {
 };
 
 const CONFIDENCE_STYLES: Record<string, { bg: string; text: string }> = {
-  high: { bg: "rgba(68, 204, 136, 0.15)", text: colors.dark.green },
-  medium: { bg: colors.dark.voltDim, text: colors.dark.volt },
-  low: { bg: colors.dark.orangeDim, text: colors.dark.orange },
+  high: { bg: "rgba(68, 204, 136, 0.15)", text: theme.green },
+  medium: { bg: theme.voltDim, text: theme.volt },
+  low: { bg: theme.orangeDim, text: theme.orange },
 };
 
 function completedToHistoryEntry(w: CompletedWorkout): WorkoutHistoryEntry {
@@ -101,12 +101,12 @@ function ExpandableWorkoutItem({
 
   const difficultyColor =
     workout.difficulty === "too_easy"
-      ? colors.dark.green
+      ? theme.green
       : workout.difficulty === "just_right"
-        ? colors.dark.volt
+        ? theme.volt
         : workout.difficulty === "too_hard"
-          ? colors.dark.red
-          : colors.dark.mutedForeground;
+          ? theme.red
+          : theme.mutedForeground;
 
   return (
     <View style={styles.workoutCard}>
@@ -124,7 +124,7 @@ function ExpandableWorkoutItem({
               <Ionicons
                 name="calendar-outline"
                 size={12}
-                color={colors.dark.mutedForeground}
+                color={theme.mutedForeground}
               />
               <Text style={styles.metaText}>
                 {formatRelativeDate(workout.completedAt)}
@@ -140,7 +140,7 @@ function ExpandableWorkoutItem({
           <Ionicons
             name="chevron-forward"
             size={18}
-            color={colors.dark.mutedForeground}
+            color={theme.mutedForeground}
           />
         </Animated.View>
       </TouchableOpacity>
@@ -192,7 +192,7 @@ function ExpandableWorkoutItem({
           {workout.isManualEntry && (
             <View style={styles.manualBadgeContainer}>
               <View style={styles.manualBadge}>
-                <Feather name="edit-3" size={10} color={colors.dark.mutedForeground} />
+                <Feather name="edit-3" size={10} color={theme.mutedForeground} />
                 <Text style={styles.manualBadgeText}>Manual Entry</Text>
               </View>
             </View>
@@ -282,9 +282,9 @@ function AddWorkoutModal({
     label: string;
     color: string;
   }[] = [
-    { value: "too_easy", label: "Too Easy", color: colors.dark.green },
-    { value: "just_right", label: "Just Right", color: colors.dark.volt },
-    { value: "too_hard", label: "Too Hard", color: colors.dark.red },
+    { value: "too_easy", label: "Too Easy", color: theme.green },
+    { value: "just_right", label: "Just Right", color: theme.volt },
+    { value: "too_hard", label: "Too Hard", color: theme.red },
   ];
 
   return (
@@ -299,7 +299,7 @@ function AddWorkoutModal({
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Log Workout</Text>
             <TouchableOpacity onPress={onClose} hitSlop={12}>
-              <Ionicons name="close" size={24} color={colors.dark.mutedForeground} />
+              <Ionicons name="close" size={24} color={theme.mutedForeground} />
             </TouchableOpacity>
           </View>
 
@@ -313,7 +313,7 @@ function AddWorkoutModal({
               value={name}
               onChangeText={setName}
               placeholder="e.g. Heavy Bag Session"
-              placeholderTextColor={colors.dark.mutedForeground}
+              placeholderTextColor={theme.mutedForeground}
             />
 
             <Text style={styles.inputLabel}>Duration (minutes)</Text>
@@ -322,7 +322,7 @@ function AddWorkoutModal({
               value={durationMins}
               onChangeText={setDurationMins}
               placeholder="30"
-              placeholderTextColor={colors.dark.mutedForeground}
+              placeholderTextColor={theme.mutedForeground}
               keyboardType="number-pad"
             />
 
@@ -360,7 +360,7 @@ function AddWorkoutModal({
               value={notes}
               onChangeText={setNotes}
               placeholder="How did it go?"
-              placeholderTextColor={colors.dark.mutedForeground}
+              placeholderTextColor={theme.mutedForeground}
               multiline
               numberOfLines={3}
               textAlignVertical="top"
@@ -368,7 +368,7 @@ function AddWorkoutModal({
           </ScrollView>
 
           <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-            <Ionicons name="checkmark" size={20} color={colors.dark.background} />
+            <Ionicons name="checkmark" size={20} color={theme.background} />
             <Text style={styles.saveButtonText}>Save</Text>
           </TouchableOpacity>
         </View>
@@ -411,7 +411,7 @@ function CoachModal({
                 <MaterialCommunityIcons
                   name="brain"
                   size={18}
-                  color={colors.dark.volt}
+                  color={theme.volt}
                 />
               </View>
               <View>
@@ -434,7 +434,7 @@ function CoachModal({
               </View>
             </View>
             <TouchableOpacity onPress={onClose} hitSlop={12}>
-              <Ionicons name="close" size={24} color={colors.dark.mutedForeground} />
+              <Ionicons name="close" size={24} color={theme.mutedForeground} />
             </TouchableOpacity>
           </View>
 
@@ -444,7 +444,7 @@ function CoachModal({
           >
             {isGenerating ? (
               <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color={colors.dark.volt} />
+                <ActivityIndicator size="large" color={theme.volt} />
                 <Text style={styles.loadingText}>
                   Analyzing your training data...
                 </Text>
@@ -515,7 +515,7 @@ function CoachModal({
                               (FOCUS_AREA_ICONS[area] as any) || "target"
                             }
                             size={12}
-                            color={colors.dark.volt}
+                            color={theme.volt}
                           />
                           <Text style={styles.focusTagText}>
                             {area.replace("_", " ")}
@@ -548,7 +548,7 @@ function CoachModal({
                           <Ionicons
                             name="shield-half"
                             size={12}
-                            color={colors.dark.foreground}
+                            color={theme.foreground}
                           />
                           <Text style={styles.defenseTagText}>{d}</Text>
                         </View>
@@ -576,7 +576,7 @@ function CoachModal({
                     <Ionicons
                       name="fitness"
                       size={16}
-                      color={colors.dark.volt}
+                      color={theme.volt}
                     />
                     <Text style={styles.encouragementText}>
                       {recommendation.encouragement}
@@ -599,7 +599,7 @@ function CoachModal({
                 style={styles.coachGenerateButton}
                 onPress={onGenerateWorkout}
               >
-                <Ionicons name="flash" size={16} color={colors.dark.background} />
+                <Ionicons name="flash" size={16} color={theme.background} />
                 <Text style={styles.coachGenerateText}>Generate Workout</Text>
               </TouchableOpacity>
             </View>
@@ -611,6 +611,7 @@ function CoachModal({
 }
 
 export default function HistoryScreen() {
+  const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [showAddModal, setShowAddModal] = useState(false);
@@ -710,7 +711,7 @@ export default function HistoryScreen() {
         <Ionicons
           name="time-outline"
           size={48}
-          color={colors.dark.surface3}
+          color={theme.surface3}
         />
         <Text style={styles.emptyTitle}>No History Yet</Text>
         <Text style={styles.emptySubtitle}>
@@ -720,7 +721,7 @@ export default function HistoryScreen() {
           style={styles.emptyButton}
           onPress={() => setShowAddModal(true)}
         >
-          <Ionicons name="add" size={18} color={colors.dark.background} />
+          <Ionicons name="add" size={18} color={theme.background} />
           <Text style={styles.emptyButtonText}>Log a Workout</Text>
         </TouchableOpacity>
       </View>
@@ -739,9 +740,9 @@ export default function HistoryScreen() {
         <View style={styles.headerTop}>
           <View style={styles.headerTitleRow}>
             <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-              <Ionicons name="chevron-back" size={22} color={colors.dark.foreground} />
+              <Ionicons name="chevron-back" size={22} color={theme.foreground} />
             </TouchableOpacity>
-            <Ionicons name="time" size={22} color={colors.dark.volt} />
+            <Ionicons name="time" size={22} color={theme.volt} />
             <Text style={styles.headerTitle}>WORKOUT LOG</Text>
           </View>
         </View>
@@ -755,7 +756,7 @@ export default function HistoryScreen() {
             <MaterialCommunityIcons
               name="brain"
               size={16}
-              color={colors.dark.volt}
+              color={theme.volt}
             />
             <Text style={styles.coachButtonText}>AI Coach</Text>
           </TouchableOpacity>
@@ -765,7 +766,7 @@ export default function HistoryScreen() {
             onPress={() => setShowAddModal(true)}
             activeOpacity={0.7}
           >
-            <Ionicons name="add" size={16} color={colors.dark.background} />
+            <Ionicons name="add" size={16} color={theme.background} />
             <Text style={styles.logButtonText}>Log Workout</Text>
           </TouchableOpacity>
         </View>
@@ -803,14 +804,14 @@ export default function HistoryScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.dark.background,
+    backgroundColor: theme.background,
   },
   header: {
     paddingHorizontal: 20,
     paddingBottom: 16,
-    backgroundColor: colors.dark.background,
+    backgroundColor: theme.background,
     borderBottomWidth: 1,
-    borderBottomColor: colors.dark.surface3,
+    borderBottomColor: theme.surface3,
   },
   headerTop: {
     marginBottom: 12,
@@ -824,9 +825,9 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: colors.dark.surface1,
+    backgroundColor: theme.surface1,
     borderWidth: 1,
-    borderColor: colors.dark.surface3,
+    borderColor: theme.surface3,
     alignItems: "center",
     justifyContent: "center",
     marginRight: 2,
@@ -834,7 +835,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 22,
     fontWeight: "900" as const,
-    color: colors.dark.foreground,
+    color: theme.foreground,
     letterSpacing: 2,
   },
   actionRow: {
@@ -850,13 +851,13 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: colors.dark.volt,
+    borderColor: theme.volt,
     backgroundColor: "transparent",
   },
   coachButtonText: {
     fontSize: 14,
     fontWeight: "600" as const,
-    color: colors.dark.volt,
+    color: theme.volt,
   },
   logButton: {
     flex: 1,
@@ -866,12 +867,12 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 10,
     borderRadius: 10,
-    backgroundColor: colors.dark.volt,
+    backgroundColor: theme.volt,
   },
   logButtonText: {
     fontSize: 14,
     fontWeight: "700" as const,
-    color: colors.dark.background,
+    color: theme.background,
   },
   listContent: {
     padding: 16,
@@ -883,10 +884,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   workoutCard: {
-    backgroundColor: colors.dark.surface1,
+    backgroundColor: theme.surface1,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: colors.dark.surface3,
+    borderColor: theme.surface3,
     overflow: "hidden",
   },
   workoutCardHeader: {
@@ -901,7 +902,7 @@ const styles = StyleSheet.create({
   workoutName: {
     fontSize: 16,
     fontWeight: "700" as const,
-    color: colors.dark.foreground,
+    color: theme.foreground,
     marginBottom: 4,
   },
   workoutMeta: {
@@ -916,22 +917,22 @@ const styles = StyleSheet.create({
   },
   metaText: {
     fontSize: 12,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
   },
   metaDot: {
     fontSize: 12,
-    color: colors.dark.surface3,
+    color: theme.surface3,
   },
   xpText: {
     fontSize: 12,
     fontWeight: "600" as const,
-    color: colors.dark.volt,
+    color: theme.volt,
   },
   expandedContent: {
     paddingHorizontal: 16,
     paddingBottom: 16,
     borderTopWidth: 1,
-    borderTopColor: colors.dark.surface3,
+    borderTopColor: theme.surface3,
   },
   detailRow: {
     flexDirection: "row",
@@ -941,7 +942,7 @@ const styles = StyleSheet.create({
   },
   detailLabel: {
     fontSize: 11,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
@@ -967,28 +968,28 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: colors.dark.surface2,
+    backgroundColor: theme.surface2,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
   },
   roundNumber: {
     fontSize: 10,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
   },
   roundRating: {
     fontSize: 12,
     fontWeight: "700" as const,
-    color: colors.dark.volt,
+    color: theme.volt,
   },
   notesBox: {
-    backgroundColor: colors.dark.surface2,
+    backgroundColor: theme.surface2,
     borderRadius: 10,
     padding: 12,
   },
   notesText: {
     fontSize: 14,
-    color: colors.dark.foreground,
+    color: theme.foreground,
     lineHeight: 20,
   },
   manualBadgeContainer: {
@@ -999,18 +1000,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 4,
     alignSelf: "flex-start",
-    backgroundColor: colors.dark.surface2,
+    backgroundColor: theme.surface2,
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
   },
   manualBadgeText: {
     fontSize: 10,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
   },
   fullDate: {
     fontSize: 10,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     marginTop: 12,
   },
   emptyState: {
@@ -1022,14 +1023,14 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 16,
     fontWeight: "700" as const,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     textTransform: "uppercase",
     letterSpacing: 1,
     marginTop: 8,
   },
   emptySubtitle: {
     fontSize: 14,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     textAlign: "center",
     marginBottom: 12,
   },
@@ -1037,7 +1038,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: colors.dark.volt,
+    backgroundColor: theme.volt,
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 10,
@@ -1045,7 +1046,7 @@ const styles = StyleSheet.create({
   emptyButtonText: {
     fontSize: 14,
     fontWeight: "700" as const,
-    color: colors.dark.background,
+    color: theme.background,
   },
   modalOverlay: {
     flex: 1,
@@ -1053,12 +1054,12 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   modalContent: {
-    backgroundColor: colors.dark.surface1,
+    backgroundColor: theme.surface1,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: "85%",
     borderWidth: 1,
-    borderColor: colors.dark.surface3,
+    borderColor: theme.surface3,
     borderBottomWidth: 0,
   },
   modalHeader: {
@@ -1068,12 +1069,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: colors.dark.surface3,
+    borderBottomColor: theme.surface3,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: "800" as const,
-    color: colors.dark.foreground,
+    color: theme.foreground,
     textTransform: "uppercase",
     letterSpacing: 1,
   },
@@ -1085,21 +1086,21 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 12,
     fontWeight: "600" as const,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     textTransform: "uppercase",
     letterSpacing: 0.5,
     marginBottom: 6,
     marginTop: 16,
   },
   textInput: {
-    backgroundColor: colors.dark.surface2,
+    backgroundColor: theme.surface2,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 16,
-    color: colors.dark.foreground,
+    color: theme.foreground,
     borderWidth: 1,
-    borderColor: colors.dark.surface3,
+    borderColor: theme.surface3,
   },
   textArea: {
     minHeight: 80,
@@ -1114,20 +1115,20 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: colors.dark.surface3,
+    borderColor: theme.surface3,
     alignItems: "center",
   },
   difficultyOptionText: {
     fontSize: 12,
     fontWeight: "600" as const,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
   },
   saveButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    backgroundColor: colors.dark.volt,
+    backgroundColor: theme.volt,
     marginHorizontal: 20,
     marginTop: 8,
     marginBottom: 34,
@@ -1137,7 +1138,7 @@ const styles = StyleSheet.create({
   saveButtonText: {
     fontSize: 16,
     fontWeight: "700" as const,
-    color: colors.dark.background,
+    color: theme.background,
   },
   coachHeaderLeft: {
     flexDirection: "row",
@@ -1148,7 +1149,7 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 8,
-    backgroundColor: colors.dark.voltDim,
+    backgroundColor: theme.voltDim,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -1170,12 +1171,12 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 14,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
   },
   coachHeadline: {
     fontSize: 20,
     fontWeight: "900" as const,
-    color: colors.dark.foreground,
+    color: theme.foreground,
     marginBottom: 8,
   },
   reasoningContainer: {
@@ -1188,17 +1189,17 @@ const styles = StyleSheet.create({
   },
   reasoningBullet: {
     fontSize: 14,
-    color: colors.dark.volt,
+    color: theme.volt,
     marginTop: 1,
   },
   reasoningText: {
     fontSize: 14,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     flex: 1,
     lineHeight: 20,
   },
   paramsCard: {
-    backgroundColor: colors.dark.surface2,
+    backgroundColor: theme.surface2,
     borderRadius: 14,
     padding: 16,
     marginBottom: 16,
@@ -1214,7 +1215,7 @@ const styles = StyleSheet.create({
   },
   paramLabel: {
     fontSize: 9,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     textTransform: "uppercase",
     letterSpacing: 1,
     marginBottom: 2,
@@ -1222,7 +1223,7 @@ const styles = StyleSheet.create({
   paramValue: {
     fontSize: 14,
     fontWeight: "700" as const,
-    color: colors.dark.foreground,
+    color: theme.foreground,
     textTransform: "capitalize",
   },
   coachSection: {
@@ -1230,7 +1231,7 @@ const styles = StyleSheet.create({
   },
   coachSectionLabel: {
     fontSize: 9,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     textTransform: "uppercase",
     letterSpacing: 1,
     marginBottom: 8,
@@ -1244,7 +1245,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: colors.dark.voltDim,
+    backgroundColor: theme.voltDim,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 8,
@@ -1252,11 +1253,11 @@ const styles = StyleSheet.create({
   focusTagText: {
     fontSize: 12,
     fontWeight: "600" as const,
-    color: colors.dark.volt,
+    color: theme.volt,
     textTransform: "capitalize",
   },
   punchTag: {
-    backgroundColor: colors.dark.surface2,
+    backgroundColor: theme.surface2,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
@@ -1264,13 +1265,13 @@ const styles = StyleSheet.create({
   punchTagText: {
     fontSize: 13,
     fontWeight: "800" as const,
-    color: colors.dark.foreground,
+    color: theme.foreground,
   },
   defenseTag: {
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
-    backgroundColor: colors.dark.surface2,
+    backgroundColor: theme.surface2,
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 8,
@@ -1278,17 +1279,17 @@ const styles = StyleSheet.create({
   defenseTagText: {
     fontSize: 12,
     fontWeight: "600" as const,
-    color: colors.dark.foreground,
+    color: theme.foreground,
   },
   comboGuidanceCard: {
-    backgroundColor: colors.dark.surface2,
+    backgroundColor: theme.surface2,
     borderRadius: 14,
     padding: 14,
     marginBottom: 14,
   },
   comboGuidanceText: {
     fontSize: 14,
-    color: colors.dark.foreground,
+    color: theme.foreground,
     lineHeight: 20,
     marginTop: 4,
   },
@@ -1310,7 +1311,7 @@ const styles = StyleSheet.create({
   encouragementText: {
     fontSize: 14,
     fontWeight: "500" as const,
-    color: colors.dark.volt,
+    color: theme.volt,
     flex: 1,
     lineHeight: 20,
   },
@@ -1320,7 +1321,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderTopWidth: 1,
-    borderTopColor: colors.dark.surface3,
+    borderTopColor: theme.surface3,
     paddingBottom: 34,
   },
   coachCloseButton: {
@@ -1328,13 +1329,13 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.dark.surface3,
+    borderColor: theme.surface3,
     alignItems: "center",
   },
   coachCloseText: {
     fontSize: 16,
     fontWeight: "600" as const,
-    color: colors.dark.foreground,
+    color: theme.foreground,
   },
   coachGenerateButton: {
     flex: 1,
@@ -1342,13 +1343,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: colors.dark.volt,
+    backgroundColor: theme.volt,
     borderRadius: 12,
     paddingVertical: 14,
     marginTop: 8,
   },
   coachGenerateText: {
-    color: colors.dark.background,
+    color: theme.background,
     fontSize: 15,
     fontWeight: "700" as const,
   },

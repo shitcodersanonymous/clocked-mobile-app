@@ -28,6 +28,7 @@ type FeedFilter = "all" | "following";
 
 
 export default function FightClubScreen() {
+  const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<SubTab>("feed");

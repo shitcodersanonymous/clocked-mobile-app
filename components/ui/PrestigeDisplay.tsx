@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import colors, { PRESTIGE_COLORS } from '@/constants/colors';
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface PrestigeDisplayProps {
   prestige: string;
@@ -15,6 +16,7 @@ interface PrestigeDisplayProps {
 }
 
 export function PrestigeDisplay({
+  const { theme } = useTheme();
   prestige,
   rankingName,
   prestigeName,
@@ -24,7 +26,7 @@ export function PrestigeDisplay({
   showProgress = true,
   size = 'md',
 }: PrestigeDisplayProps) {
-  const barColor = PRESTIGE_COLORS[prestige] || colors.dark.volt;
+  const barColor = PRESTIGE_COLORS[prestige] || theme.volt;
   const progress = requiredXP > 0 ? Math.min(1, currentXP / requiredXP) : 0;
   const xpString = `${Math.floor(currentXP).toLocaleString()} / ${requiredXP.toLocaleString()} XP`;
 
@@ -76,12 +78,13 @@ interface PrestigeBadgeCompactProps {
 }
 
 export function PrestigeBadgeCompact({
+  const { theme } = useTheme();
   prestige,
   rankingName,
   prestigeName,
   level,
 }: PrestigeBadgeCompactProps) {
-  const color = PRESTIGE_COLORS[prestige] || colors.dark.volt;
+  const color = PRESTIGE_COLORS[prestige] || theme.volt;
 
   return (
     <View style={[styles.compactBadge, { backgroundColor: color + '33' }]}>
@@ -120,11 +123,11 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
   },
   separator: {
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
   },
   rankText: {
     fontWeight: '600' as const,
-    color: colors.dark.foreground,
+    color: theme.foreground,
   },
   levelText: {
     fontWeight: '700' as const,
@@ -134,7 +137,7 @@ const styles = StyleSheet.create({
   },
   barBackground: {
     borderRadius: 4,
-    backgroundColor: colors.dark.surface3,
+    backgroundColor: theme.surface3,
     overflow: 'hidden',
   },
   barFill: {
@@ -143,7 +146,7 @@ const styles = StyleSheet.create({
   },
   xpText: {
     fontSize: 11,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
   },
   compactBadge: {
     flexDirection: 'row',

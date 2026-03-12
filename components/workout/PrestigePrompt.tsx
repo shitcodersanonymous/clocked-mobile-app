@@ -14,7 +14,9 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Prestige, PRESTIGE_NAMES, getPrestigeChanges } from '@/lib/xpSystem';
 import { PRESTIGE_COLORS } from '@/constants/colors';
+import { useTheme } from "@/contexts/ThemeContext";
 import colors from '@/constants/colors';
+import { useTheme } from "@/contexts/ThemeContext";
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -33,9 +35,10 @@ const TIER_ICONS: Record<Prestige, keyof typeof MaterialCommunityIcons.glyphMap>
 };
 
 export default function PrestigePrompt({ onConfirm, onDismiss, currentPrestige }: PrestigePromptProps) {
+  const { theme } = useTheme();
   const [step, setStep] = useState<1 | 2>(1);
   const changes = getPrestigeChanges(currentPrestige);
-  const tierColor = PRESTIGE_COLORS[currentPrestige] || colors.dark.volt;
+  const tierColor = PRESTIGE_COLORS[currentPrestige] || theme.volt;
   const nextTierColor = changes ? PRESTIGE_COLORS[changes.nextTier] : tierColor;
 
   const glowScale = useSharedValue(1);
@@ -84,17 +87,17 @@ export default function PrestigePrompt({ onConfirm, onDismiss, currentPrestige }
                 </View>
 
                 <View style={styles.changeRow}>
-                  <MaterialCommunityIcons name="refresh" size={18} color={colors.dark.amber} />
+                  <MaterialCommunityIcons name="refresh" size={18} color={theme.amber} />
                   <Text style={styles.changeText}>Level resets to 1 with a steeper XP curve</Text>
                 </View>
 
                 <View style={styles.changeRow}>
-                  <MaterialCommunityIcons name="lock-open-variant" size={18} color={colors.dark.green} />
+                  <MaterialCommunityIcons name="lock-open-variant" size={18} color={theme.green} />
                   <Text style={styles.changeText}>Unlock new combos, badges, and gloves</Text>
                 </View>
 
                 <View style={styles.changeRow}>
-                  <MaterialCommunityIcons name="trophy" size={18} color={colors.dark.yellow} />
+                  <MaterialCommunityIcons name="trophy" size={18} color={theme.yellow} />
                   <Text style={styles.changeText}>
                     {changes.newLevelCurve.totalL100.toLocaleString()} XP to reach L100 again
                   </Text>
@@ -104,7 +107,7 @@ export default function PrestigePrompt({ onConfirm, onDismiss, currentPrestige }
 
             <View style={styles.buttonRow}>
               <TouchableOpacity style={styles.dismissButton} onPress={onDismiss} activeOpacity={0.7}>
-                <MaterialCommunityIcons name="close" size={22} color={colors.dark.mutedForeground} />
+                <MaterialCommunityIcons name="close" size={22} color={theme.mutedForeground} />
                 <Text style={styles.dismissText}>Not yet</Text>
               </TouchableOpacity>
 
@@ -113,31 +116,31 @@ export default function PrestigePrompt({ onConfirm, onDismiss, currentPrestige }
                 onPress={() => setStep(2)}
                 activeOpacity={0.8}
               >
-                <MaterialCommunityIcons name="chevron-right" size={22} color={colors.dark.background} />
+                <MaterialCommunityIcons name="chevron-right" size={22} color={theme.background} />
                 <Text style={styles.confirmText}>Prestige Up</Text>
               </TouchableOpacity>
             </View>
           </Animated.View>
         ) : (
           <Animated.View entering={FadeIn.duration(200)} key="step2" style={styles.content}>
-            <Text style={[styles.title, { color: colors.dark.red }]}>ARE YOU SURE?</Text>
+            <Text style={[styles.title, { color: theme.red }]}>ARE YOU SURE?</Text>
             <Text style={styles.warningText}>
               This is permanent. Your level will reset to 1 and XP requirements will increase significantly.
             </Text>
 
-            <View style={[styles.warningBox, { borderColor: colors.dark.red }]}>
-              <MaterialCommunityIcons name="alert" size={20} color={colors.dark.red} />
+            <View style={[styles.warningBox, { borderColor: theme.red }]}>
+              <MaterialCommunityIcons name="alert" size={20} color={theme.red} />
               <Text style={styles.warningBoxText}>This action cannot be undone.</Text>
             </View>
 
             <View style={styles.buttonRow}>
               <TouchableOpacity style={styles.dismissButton} onPress={() => setStep(1)} activeOpacity={0.7}>
-                <MaterialCommunityIcons name="arrow-left" size={22} color={colors.dark.mutedForeground} />
+                <MaterialCommunityIcons name="arrow-left" size={22} color={theme.mutedForeground} />
                 <Text style={styles.dismissText}>Go back</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.confirmButton, { backgroundColor: colors.dark.red }]}
+                style={[styles.confirmButton, { backgroundColor: theme.red }]}
                 onPress={onConfirm}
                 activeOpacity={0.8}
               >
@@ -163,12 +166,12 @@ const styles = StyleSheet.create({
   container: {
     width: SCREEN_WIDTH - 48,
     maxWidth: 380,
-    backgroundColor: colors.dark.surface2,
+    backgroundColor: theme.surface2,
     borderRadius: 24,
     padding: 28,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: colors.dark.border,
+    borderColor: theme.border,
   },
   iconSection: {
     width: 100,
@@ -188,7 +191,7 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 40,
     borderWidth: 2,
-    backgroundColor: colors.dark.surface1,
+    backgroundColor: theme.surface1,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -204,7 +207,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 15,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     textAlign: 'center',
     marginBottom: 24,
     lineHeight: 21,
@@ -216,7 +219,7 @@ const styles = StyleSheet.create({
   changesTitle: {
     fontSize: 13,
     fontWeight: '600',
-    color: colors.dark.foreground,
+    color: theme.foreground,
     marginBottom: 12,
     textTransform: 'uppercase',
     letterSpacing: 1,
@@ -229,7 +232,7 @@ const styles = StyleSheet.create({
   },
   changeText: {
     fontSize: 14,
-    color: colors.dark.foreground,
+    color: theme.foreground,
     flex: 1,
     lineHeight: 20,
   },
@@ -246,12 +249,12 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 14,
     borderRadius: 14,
-    backgroundColor: colors.dark.surface3,
+    backgroundColor: theme.surface3,
   },
   dismissText: {
     fontSize: 15,
     fontWeight: '600',
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
   },
   confirmButton: {
     flex: 1,
@@ -265,11 +268,11 @@ const styles = StyleSheet.create({
   confirmText: {
     fontSize: 15,
     fontWeight: '700',
-    color: colors.dark.background,
+    color: theme.background,
   },
   warningText: {
     fontSize: 15,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     textAlign: 'center',
     marginBottom: 20,
     lineHeight: 22,
@@ -282,13 +285,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 12,
     borderWidth: 1,
-    backgroundColor: colors.dark.redDim,
+    backgroundColor: theme.redDim,
     marginBottom: 24,
     width: '100%',
   },
   warningBoxText: {
     fontSize: 13,
-    color: colors.dark.red,
+    color: theme.red,
     fontWeight: '600',
   },
 });

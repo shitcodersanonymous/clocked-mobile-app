@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import colors from '@/constants/colors';
+import { useTheme } from "@/contexts/ThemeContext";
 import { GLOVES, TIER_SECTIONS, getGlovesForTier, checkGloveUnlocks, Glove } from '@/data/gloves';
 import { useUserStore } from '@/stores/userStore';
 import { useGloveStore } from '@/stores/gloveStore';
@@ -57,7 +58,7 @@ function GloveGridItem({
           <Ionicons
             name="lock-closed"
             size={16}
-            color={colors.dark.mutedForeground + '66'}
+            color={theme.mutedForeground + '66'}
           />
         )}
       </View>
@@ -65,7 +66,7 @@ function GloveGridItem({
       <Text
         style={[
           styles.gloveName,
-          { color: isUnlocked ? colors.dark.foreground : colors.dark.mutedForeground + '66' },
+          { color: isUnlocked ? theme.foreground : theme.mutedForeground + '66' },
         ]}
         numberOfLines={2}
       >
@@ -88,6 +89,7 @@ function GloveGridItem({
 }
 
 export default function GlovesScreen() {
+  const { theme } = useTheme();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const user = useUserStore((s) => s.user);
@@ -126,7 +128,7 @@ export default function GlovesScreen() {
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: (Platform.OS === 'web' ? webTopInset : insets.top) + 12 }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Ionicons name="chevron-back" size={24} color={colors.dark.foreground} />
+          <Ionicons name="chevron-back" size={24} color={theme.foreground} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Gloves</Text>
         <Text style={styles.headerCount}>{totalUnlocked}/52</Text>
@@ -190,7 +192,7 @@ export default function GlovesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.dark.background,
+    backgroundColor: theme.background,
   },
   header: {
     flexDirection: 'row',
@@ -198,8 +200,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 12,
     borderBottomWidth: 1,
-    borderBottomColor: colors.dark.border,
-    backgroundColor: colors.dark.background,
+    borderBottomColor: theme.border,
+    backgroundColor: theme.background,
   },
   backBtn: {
     marginRight: 12,
@@ -208,11 +210,11 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 20,
     fontWeight: '700' as const,
-    color: colors.dark.foreground,
+    color: theme.foreground,
   },
   headerCount: {
     fontSize: 14,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
   },
   scroll: {
     flex: 1,
@@ -224,13 +226,13 @@ const styles = StyleSheet.create({
   equippedSection: {
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: colors.dark.border,
+    borderBottomColor: theme.border,
     marginBottom: 20,
   },
   sectionLabel: {
     fontSize: 10,
     fontWeight: '600' as const,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     letterSpacing: 1.2,
     marginBottom: 10,
   },
@@ -244,7 +246,7 @@ const styles = StyleSheet.create({
     height: 48,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: colors.dark.volt,
+    borderColor: theme.volt,
   },
   equippedInfo: {
     flex: 1,
@@ -252,11 +254,11 @@ const styles = StyleSheet.create({
   equippedName: {
     fontSize: 15,
     fontWeight: '700' as const,
-    color: colors.dark.foreground,
+    color: theme.foreground,
   },
   equippedDesc: {
     fontSize: 12,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     marginTop: 2,
   },
   tierSection: {
@@ -271,12 +273,12 @@ const styles = StyleSheet.create({
   tierLabel: {
     fontSize: 13,
     fontWeight: '700' as const,
-    color: colors.dark.foreground,
+    color: theme.foreground,
     letterSpacing: 1,
   },
   tierSubtitle: {
     fontSize: 10,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
   },
   gloveGrid: {
     flexDirection: 'row',
@@ -294,17 +296,17 @@ const styles = StyleSheet.create({
     padding: 6,
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: colors.dark.surface3,
-    backgroundColor: colors.dark.surface1,
+    borderColor: theme.surface3,
+    backgroundColor: theme.surface1,
   },
   gloveItemEquipped: {
-    borderColor: colors.dark.volt,
-    backgroundColor: colors.dark.voltDim,
+    borderColor: theme.volt,
+    backgroundColor: theme.voltDim,
   },
   gloveItemLocked: {
     opacity: 0.6,
-    backgroundColor: colors.dark.surface1 + '55',
-    borderColor: colors.dark.surface3 + '55',
+    backgroundColor: theme.surface1 + '55',
+    borderColor: theme.surface3 + '55',
   },
   gloveColor: {
     width: '100%',
@@ -332,7 +334,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -4,
     right: -4,
-    backgroundColor: colors.dark.volt,
+    backgroundColor: theme.volt,
     paddingHorizontal: 4,
     paddingVertical: 1,
     borderRadius: 6,
@@ -340,11 +342,11 @@ const styles = StyleSheet.create({
   equippedTagText: {
     fontSize: 7,
     fontWeight: '800' as const,
-    color: colors.dark.background,
+    color: theme.background,
   },
   unlockReq: {
     fontSize: 7,
-    color: colors.dark.mutedForeground + '66',
+    color: theme.mutedForeground + '66',
     marginTop: 2,
   },
 });

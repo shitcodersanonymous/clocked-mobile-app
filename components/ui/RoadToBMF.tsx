@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import colors, { PRESTIGE_COLORS } from '@/constants/colors';
+import { useTheme } from "@/contexts/ThemeContext";
 import { Prestige, PRESTIGE_NAMES, PRESTIGE_ORDER } from '@/lib/xpSystem';
 
 const TIER_SHORT: Record<Prestige, string> = {
@@ -20,6 +21,7 @@ interface RoadToBMFProps {
 }
 
 export default function RoadToBMF({
+  const { theme } = useTheme();
   workoutsCompleted,
   prestige,
   level,
@@ -48,10 +50,10 @@ export default function RoadToBMF({
         const tierLevel = isCompleted ? 100 : isCurrent ? level : 0;
         const barWidth = isCompleted ? '100%' : isCurrent ? `${Math.max(2, (level / 100) * 100)}%` : '0%';
         const barColor = isCompleted
-          ? colors.dark.surface4
+          ? theme.surface4
           : isCurrent
-          ? colors.dark.volt
-          : colors.dark.surface3;
+          ? theme.volt
+          : theme.surface3;
 
         return (
           <View key={p} style={styles.tierRow}>
@@ -82,7 +84,7 @@ export default function RoadToBMF({
         <Text style={styles.bossCount}>{workoutsCompleted}/250</Text>
       </View>
       <View style={styles.bossHint}>
-        <Ionicons name="trophy-outline" size={11} color={colors.dark.mutedForeground} />
+        <Ionicons name="trophy-outline" size={11} color={theme.mutedForeground} />
         <Text style={styles.bossHintText}>250 total sessions — Baddest MF</Text>
       </View>
 
@@ -94,7 +96,7 @@ export default function RoadToBMF({
         <Text style={styles.bossCount}>{currentStreak}/365</Text>
       </View>
       <View style={styles.bossHint}>
-        <Ionicons name="flame-outline" size={11} color={colors.dark.mutedForeground} />
+        <Ionicons name="flame-outline" size={11} color={theme.mutedForeground} />
         <Text style={styles.bossHintText}>365 consecutive days — Baddest MF Killer</Text>
       </View>
     </View>
@@ -103,11 +105,11 @@ export default function RoadToBMF({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: colors.dark.surface1,
+    backgroundColor: theme.surface1,
     borderRadius: 16,
     padding: 16,
     borderWidth: 1,
-    borderColor: colors.dark.border,
+    borderColor: theme.border,
     marginBottom: 16,
   },
   header: {
@@ -117,13 +119,13 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   title: {
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     fontSize: 12,
     fontWeight: '700' as const,
     letterSpacing: 1.2,
   },
   pct: {
-    color: colors.dark.volt,
+    color: theme.volt,
     fontSize: 15,
     fontWeight: '800' as const,
   },
@@ -137,17 +139,17 @@ const styles = StyleSheet.create({
     width: 34,
     fontSize: 11,
     fontWeight: '600' as const,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     textAlign: 'right',
   },
   tierLabelActive: {
-    color: colors.dark.volt,
+    color: theme.volt,
     fontWeight: '800' as const,
   },
   barBg: {
     flex: 1,
     height: 8,
-    backgroundColor: colors.dark.surface3,
+    backgroundColor: theme.surface3,
     borderRadius: 4,
     overflow: 'hidden',
     position: 'relative',
@@ -160,11 +162,11 @@ const styles = StyleSheet.create({
     width: 28,
     fontSize: 12,
     fontWeight: '600' as const,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     textAlign: 'right',
   },
   tierCountActive: {
-    color: colors.dark.foreground,
+    color: theme.foreground,
     fontWeight: '700' as const,
   },
   divider: {
@@ -176,12 +178,12 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: colors.dark.border,
+    backgroundColor: theme.border,
   },
   dividerText: {
     fontSize: 10,
     fontWeight: '800' as const,
-    color: colors.dark.volt,
+    color: theme.volt,
     letterSpacing: 1.5,
   },
   bossRow: {
@@ -200,7 +202,7 @@ const styles = StyleSheet.create({
     width: 42,
     fontSize: 11,
     fontWeight: '700' as const,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     textAlign: 'right',
   },
   bossHint: {
@@ -212,7 +214,7 @@ const styles = StyleSheet.create({
   },
   bossHintText: {
     fontSize: 10,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     fontStyle: 'italic',
   },
 });

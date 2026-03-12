@@ -83,6 +83,7 @@ function formatTimeCompact(seconds: number): string {
 
 export default function WorkoutSessionScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { theme } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -218,7 +219,7 @@ export default function WorkoutSessionScreen() {
     currentSegment?.section === 'cooldown' ||
     currentSegment?.phaseName?.toLowerCase() === 'cooldown'
   );
-  const accentColor = isChampionship ? colors.dark.yellow : isCooldown ? colors.dark.blue : colors.dark.volt;
+  const accentColor = isChampionship ? theme.yellow : isCooldown ? theme.blue : theme.volt;
 
   const liveLevel = getLevelFromXP(prestige, (user?.totalXP || 0) + accumulatedXP);
 
@@ -618,8 +619,8 @@ export default function WorkoutSessionScreen() {
             onPress={handleExit}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Ionicons name="arrow-back" size={16} color={colors.dark.foreground} />
-            <Ionicons name="home-outline" size={16} color={colors.dark.foreground} />
+            <Ionicons name="arrow-back" size={16} color={theme.foreground} />
+            <Ionicons name="home-outline" size={16} color={theme.foreground} />
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.topBarBtn}
@@ -630,7 +631,7 @@ export default function WorkoutSessionScreen() {
               ]);
             }}
           >
-            <Ionicons name="refresh" size={16} color={colors.dark.foreground} />
+            <Ionicons name="refresh" size={16} color={theme.foreground} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.topBarBtn} onPress={handleCompleteEarly}>
             <Ionicons name="checkmark-circle-outline" size={18} color={accentColor} />
@@ -642,7 +643,7 @@ export default function WorkoutSessionScreen() {
           </Text>
           {(user?.currentStreak || 0) > 0 && (
             <View style={styles.streakPill}>
-              <Ionicons name="flame" size={12} color={colors.dark.orange} />
+              <Ionicons name="flame" size={12} color={theme.orange} />
               <Text style={styles.streakPillText}>
                 {user?.currentStreak}d · {streakMultiplier}x
               </Text>
@@ -667,7 +668,7 @@ export default function WorkoutSessionScreen() {
           style={styles.badgePopContainer}
         >
           <View style={styles.badgePopPill}>
-            <Ionicons name="trophy" size={14} color={colors.dark.amber} />
+            <Ionicons name="trophy" size={14} color={theme.amber} />
             <Text style={styles.badgePopName}>{latestBadgePop.badge.name}</Text>
             <Text style={styles.badgePopXP}>+{latestBadgePop.badge.xpReward.toLocaleString()} XP</Text>
           </View>
@@ -677,7 +678,7 @@ export default function WorkoutSessionScreen() {
       {liveBadgesEarned.length > 0 && !latestBadgePop && (
         <View style={styles.badgeTallyContainer}>
           <View style={styles.badgeTallyPill}>
-            <Ionicons name="trophy" size={12} color={colors.dark.amber} />
+            <Ionicons name="trophy" size={12} color={theme.amber} />
             <Text style={styles.badgeTallyText}>
               {liveBadgesEarned.length} badge{liveBadgesEarned.length !== 1 ? 's' : ''} ·{' '}
               +{liveBadgesEarned.reduce((s, lb) => s + lb.badge.xpReward, 0).toLocaleString()} XP
@@ -722,14 +723,14 @@ export default function WorkoutSessionScreen() {
           <Text style={styles.phaseLabel}>GET READY</Text>
         ) : isChampionship ? (
           <View style={styles.championshipLabel}>
-            <Ionicons name="flash" size={14} color={colors.dark.yellow} />
-            <Text style={[styles.phaseLabel, { color: colors.dark.yellow }]}>
+            <Ionicons name="flash" size={14} color={theme.yellow} />
+            <Text style={[styles.phaseLabel, { color: theme.yellow }]}>
               {currentSegment?.phaseName || 'CHAMPIONSHIP'}
             </Text>
-            <Ionicons name="flash" size={14} color={colors.dark.yellow} />
+            <Ionicons name="flash" size={14} color={theme.yellow} />
           </View>
         ) : (
-          <Text style={[styles.phaseLabel, isCooldown && { color: colors.dark.blue }]}>
+          <Text style={[styles.phaseLabel, isCooldown && { color: theme.blue }]}>
             {currentSegment?.phaseName || 'WARMUP'}
           </Text>
         )}
@@ -749,8 +750,8 @@ export default function WorkoutSessionScreen() {
           <Text
             style={[
               styles.segmentName,
-              isChampionship && { color: colors.dark.yellow },
-              isCooldown && { color: colors.dark.blue },
+              isChampionship && { color: theme.yellow },
+              isCooldown && { color: theme.blue },
             ]}
           >
             {isPreparation ? 'PREPARATION' : currentSegment?.name || 'WORK'}
@@ -794,10 +795,10 @@ export default function WorkoutSessionScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.dark.background,
+    backgroundColor: theme.background,
   },
   notFoundText: {
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     fontSize: 16,
     textAlign: 'center',
     marginTop: 100,
@@ -807,16 +808,16 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     paddingHorizontal: 24,
     paddingVertical: 12,
-    backgroundColor: colors.dark.surface2,
+    backgroundColor: theme.surface2,
     borderRadius: 12,
   },
   goHomeBtnText: {
-    color: colors.dark.foreground,
+    color: theme.foreground,
     fontSize: 14,
     fontWeight: '600',
   },
   calculatingText: {
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     fontSize: 16,
     textAlign: 'center',
     marginTop: 100,
@@ -843,17 +844,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
     borderRadius: 20,
-    backgroundColor: colors.dark.surface1,
+    backgroundColor: theme.surface1,
     borderWidth: 1,
-    borderColor: colors.dark.surface3,
+    borderColor: theme.surface3,
   },
   topBarBtn: {
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: colors.dark.surface1,
+    backgroundColor: theme.surface1,
     borderWidth: 1,
-    borderColor: colors.dark.surface3,
+    borderColor: theme.surface3,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -876,7 +877,7 @@ const styles = StyleSheet.create({
   streakPillText: {
     fontSize: 10,
     fontWeight: '700',
-    color: colors.dark.orange,
+    color: theme.orange,
   },
   mainContent: {
     flex: 1,
@@ -887,7 +888,7 @@ const styles = StyleSheet.create({
   phaseLabel: {
     fontSize: 11,
     fontWeight: '700',
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     textTransform: 'uppercase',
     letterSpacing: 2,
     marginBottom: 8,
@@ -913,7 +914,7 @@ const styles = StyleSheet.create({
   segmentName: {
     fontSize: 16,
     fontWeight: '900',
-    color: colors.dark.foreground,
+    color: theme.foreground,
     textTransform: 'uppercase',
     letterSpacing: 1,
     textAlign: 'center',
@@ -938,14 +939,14 @@ const styles = StyleSheet.create({
   badgePopName: {
     fontSize: 11,
     fontWeight: '700',
-    color: colors.dark.amber,
+    color: theme.amber,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   badgePopXP: {
     fontSize: 11,
     fontWeight: '900',
-    color: colors.dark.volt,
+    color: theme.volt,
   },
   badgeTallyContainer: {
     alignItems: 'center',
@@ -965,7 +966,7 @@ const styles = StyleSheet.create({
   badgeTallyText: {
     fontSize: 10,
     fontWeight: '700',
-    color: colors.dark.amber,
+    color: theme.amber,
   },
   comboXPPopContainer: {
     position: 'absolute',

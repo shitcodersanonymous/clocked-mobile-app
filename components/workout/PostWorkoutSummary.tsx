@@ -17,7 +17,9 @@ import Animated, {
   FadeIn,
 } from 'react-native-reanimated';
 import colors from '@/constants/colors';
+import { useTheme } from "@/contexts/ThemeContext";
 import { PRESTIGE_COLORS } from '@/constants/colors';
+import { useTheme } from "@/contexts/ThemeContext";
 import {
   Prestige,
   PRESTIGE_NAMES,
@@ -100,6 +102,7 @@ function AnimatedXPCounter({ targetValue, color }: { targetValue: number; color:
 }
 
 export default function PostWorkoutSummary({
+  const { theme } = useTheme();
   sessionResult,
   workoutName,
   totalElapsed,
@@ -151,7 +154,7 @@ export default function PostWorkoutSummary({
         <Animated.View style={cardAnimStyle}>
           <View style={styles.xpTotalCard}>
             <Text style={styles.xpTotalLabel}>TOTAL XP EARNED</Text>
-            <AnimatedXPCounter targetValue={sessionResult.sessionTotal} color={colors.dark.volt} />
+            <AnimatedXPCounter targetValue={sessionResult.sessionTotal} color={theme.volt} />
           </View>
 
           <View style={styles.xpBreakdownCard}>
@@ -161,18 +164,18 @@ export default function PostWorkoutSummary({
             </View>
             {sessionResult.streakBonus > 0 && (
               <View style={styles.xpRow}>
-                <Text style={[styles.xpRowLabel, { color: colors.dark.orange }]}>
+                <Text style={[styles.xpRowLabel, { color: theme.orange }]}>
                   Streak Bonus ({sessionResult.streakMultiplier}x)
                 </Text>
-                <Text style={[styles.xpRowValue, { color: colors.dark.orange }]}>
+                <Text style={[styles.xpRowValue, { color: theme.orange }]}>
                   +{sessionResult.streakBonus.toLocaleString()}
                 </Text>
               </View>
             )}
             {sessionResult.badgeXP > 0 && (
               <View style={styles.xpRow}>
-                <Text style={[styles.xpRowLabel, { color: colors.dark.amber }]}>Badge XP</Text>
-                <Text style={[styles.xpRowValue, { color: colors.dark.amber }]}>
+                <Text style={[styles.xpRowLabel, { color: theme.amber }]}>Badge XP</Text>
+                <Text style={[styles.xpRowValue, { color: theme.amber }]}>
                   +{sessionResult.badgeXP.toLocaleString()}
                 </Text>
               </View>
@@ -202,7 +205,7 @@ export default function PostWorkoutSummary({
               <Text style={styles.badgesEarnedTitle}>BADGES EARNED</Text>
               {sessionResult.newBadges.map((badge) => (
                 <View key={badge.id} style={styles.badgeRow}>
-                  <Ionicons name="trophy" size={16} color={colors.dark.amber} />
+                  <Ionicons name="trophy" size={16} color={theme.amber} />
                   <View style={styles.badgeInfo}>
                     <Text style={styles.badgeName}>{badge.name}</Text>
                     <Text style={styles.badgeDesc}>{badge.description}</Text>
@@ -229,7 +232,7 @@ export default function PostWorkoutSummary({
                   <Ionicons
                     name={d === 'too_easy' ? 'thumbs-down-outline' : d === 'just_right' ? 'thumbs-up-outline' : 'flame-outline'}
                     size={20}
-                    color={difficultyRating === d ? accentColor : colors.dark.mutedForeground}
+                    color={difficultyRating === d ? accentColor : theme.mutedForeground}
                   />
                   <Text style={[
                     styles.difficultyBtnText,
@@ -245,7 +248,7 @@ export default function PostWorkoutSummary({
           <TextInput
             style={styles.notesInput}
             placeholder="Add notes..."
-            placeholderTextColor={colors.dark.mutedForeground}
+            placeholderTextColor={theme.mutedForeground}
             value={notes}
             onChangeText={setNotes}
             multiline
@@ -258,13 +261,13 @@ export default function PostWorkoutSummary({
             </TouchableOpacity>
           ) : (
             <View style={styles.loggedContainer}>
-              <Ionicons name="checkmark-circle" size={24} color={colors.dark.green} />
+              <Ionicons name="checkmark-circle" size={24} color={theme.green} />
               <Text style={styles.loggedText}>Workout Logged!</Text>
             </View>
           )}
 
           <TouchableOpacity style={styles.homeBtn} onPress={onGoHome}>
-            <Ionicons name="home-outline" size={20} color={colors.dark.foreground} />
+            <Ionicons name="home-outline" size={20} color={theme.foreground} />
             <Text style={styles.homeBtnText}>Home</Text>
           </TouchableOpacity>
         </Animated.View>
@@ -290,7 +293,7 @@ export default function PostWorkoutSummary({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.dark.background,
+    backgroundColor: theme.background,
   },
   summaryScroll: {
     flex: 1,
@@ -302,7 +305,7 @@ const styles = StyleSheet.create({
   summaryTitle: {
     fontSize: 14,
     fontWeight: '900' as const,
-    color: colors.dark.volt,
+    color: theme.volt,
     letterSpacing: 3,
     textAlign: 'center',
     marginBottom: 4,
@@ -310,46 +313,46 @@ const styles = StyleSheet.create({
   workoutNameSummary: {
     fontSize: 24,
     fontWeight: '900' as const,
-    color: colors.dark.foreground,
+    color: theme.foreground,
     textAlign: 'center',
     marginBottom: 4,
   },
   summaryDuration: {
     fontSize: 16,
     fontWeight: '600' as const,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     textAlign: 'center',
     marginBottom: 24,
     fontVariant: ['tabular-nums'],
   },
   xpTotalCard: {
-    backgroundColor: colors.dark.surface1,
+    backgroundColor: theme.surface1,
     borderRadius: 16,
     padding: 20,
     alignItems: 'center',
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: colors.dark.volt + '30',
+    borderColor: theme.volt + '30',
   },
   xpTotalLabel: {
     fontSize: 11,
     fontWeight: '700' as const,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     letterSpacing: 1,
     marginBottom: 4,
   },
   xpTotalValue: {
     fontSize: 36,
     fontWeight: '900' as const,
-    color: colors.dark.volt,
+    color: theme.volt,
   },
   xpBreakdownCard: {
-    backgroundColor: colors.dark.surface1,
+    backgroundColor: theme.surface1,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: colors.dark.border,
+    borderColor: theme.border,
   },
   xpRow: {
     flexDirection: 'row',
@@ -358,20 +361,20 @@ const styles = StyleSheet.create({
   },
   xpRowLabel: {
     fontSize: 13,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
   },
   xpRowValue: {
     fontSize: 13,
     fontWeight: '700' as const,
-    color: colors.dark.foreground,
+    color: theme.foreground,
   },
   levelCard: {
-    backgroundColor: colors.dark.surface1,
+    backgroundColor: theme.surface1,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: colors.dark.border,
+    borderColor: theme.border,
   },
   levelRow: {
     flexDirection: 'row',
@@ -380,24 +383,24 @@ const styles = StyleSheet.create({
   },
   levelLabel: {
     fontSize: 13,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
   },
   levelValue: {
     fontSize: 13,
     fontWeight: '700' as const,
   },
   badgesEarnedCard: {
-    backgroundColor: colors.dark.surface1,
+    backgroundColor: theme.surface1,
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
     borderWidth: 1,
-    borderColor: colors.dark.border,
+    borderColor: theme.border,
   },
   badgesEarnedTitle: {
     fontSize: 11,
     fontWeight: '700' as const,
-    color: colors.dark.amber,
+    color: theme.amber,
     letterSpacing: 1,
     marginBottom: 12,
   },
@@ -407,7 +410,7 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: colors.dark.surface3,
+    borderBottomColor: theme.surface3,
   },
   badgeInfo: {
     flex: 1,
@@ -415,16 +418,16 @@ const styles = StyleSheet.create({
   badgeName: {
     fontSize: 13,
     fontWeight: '700' as const,
-    color: colors.dark.foreground,
+    color: theme.foreground,
   },
   badgeDesc: {
     fontSize: 11,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
   },
   badgeXP: {
     fontSize: 13,
     fontWeight: '900' as const,
-    color: colors.dark.volt,
+    color: theme.volt,
   },
   difficultySection: {
     marginBottom: 16,
@@ -432,7 +435,7 @@ const styles = StyleSheet.create({
   difficultyLabel: {
     fontSize: 13,
     fontWeight: '600' as const,
-    color: colors.dark.foreground,
+    color: theme.foreground,
     marginBottom: 10,
   },
   difficultyRow: {
@@ -443,28 +446,28 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     borderRadius: 12,
-    backgroundColor: colors.dark.surface1,
+    backgroundColor: theme.surface1,
     borderWidth: 1,
-    borderColor: colors.dark.surface3,
+    borderColor: theme.surface3,
     alignItems: 'center',
     gap: 4,
   },
   difficultyBtnActive: {
-    backgroundColor: colors.dark.surface2,
+    backgroundColor: theme.surface2,
   },
   difficultyBtnText: {
     fontSize: 11,
     fontWeight: '600' as const,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
   },
   notesInput: {
-    backgroundColor: colors.dark.surface1,
+    backgroundColor: theme.surface1,
     borderRadius: 12,
     padding: 14,
-    color: colors.dark.foreground,
+    color: theme.foreground,
     fontSize: 14,
     borderWidth: 1,
-    borderColor: colors.dark.border,
+    borderColor: theme.border,
     marginBottom: 20,
     minHeight: 80,
     textAlignVertical: 'top',
@@ -478,7 +481,7 @@ const styles = StyleSheet.create({
   logBtnText: {
     fontSize: 15,
     fontWeight: '900' as const,
-    color: colors.dark.background,
+    color: theme.background,
     letterSpacing: 1,
   },
   loggedContainer: {
@@ -492,7 +495,7 @@ const styles = StyleSheet.create({
   loggedText: {
     fontSize: 16,
     fontWeight: '700' as const,
-    color: colors.dark.green,
+    color: theme.green,
   },
   homeBtn: {
     flexDirection: 'row',
@@ -501,13 +504,13 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingVertical: 14,
     borderRadius: 12,
-    backgroundColor: colors.dark.surface1,
+    backgroundColor: theme.surface1,
     borderWidth: 1,
-    borderColor: colors.dark.border,
+    borderColor: theme.border,
   },
   homeBtnText: {
     fontSize: 14,
     fontWeight: '600' as const,
-    color: colors.dark.foreground,
+    color: theme.foreground,
   },
 });

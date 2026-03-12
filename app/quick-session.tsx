@@ -21,6 +21,7 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import colors from '@/constants/colors';
+import { useTheme } from "@/contexts/ThemeContext";
 import { useUserStore } from '@/stores/userStore';
 import { useHistoryStore } from '@/stores/historyStore';
 import { useBadgeStore } from '@/stores/badgeStore';
@@ -49,6 +50,7 @@ function formatTimeCompact(seconds: number): string {
 }
 
 export default function QuickSessionScreen() {
+  const { theme } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -255,7 +257,7 @@ export default function QuickSessionScreen() {
         )}
 
         <View style={styles.completeContent}>
-          <Ionicons name="timer-outline" size={48} color={colors.dark.volt} />
+          <Ionicons name="timer-outline" size={48} color={theme.volt} />
           <Text style={styles.completeTitle}>SESSION COMPLETE</Text>
           <Text style={styles.completeSubtitle}>Quick Session</Text>
 
@@ -272,7 +274,7 @@ export default function QuickSessionScreen() {
 
           {streakMultiplier > 1 && (
             <View style={styles.streakBonusPill}>
-              <Ionicons name="flame" size={14} color={colors.dark.orange} />
+              <Ionicons name="flame" size={14} color={theme.orange} />
               <Text style={styles.streakBonusText}>
                 {streakMultiplier}x Streak Bonus Applied
               </Text>
@@ -297,7 +299,7 @@ export default function QuickSessionScreen() {
                 value={notes}
                 onChangeText={setNotes}
                 placeholder="Add notes about your session..."
-                placeholderTextColor={colors.dark.mutedForeground}
+                placeholderTextColor={theme.mutedForeground}
                 multiline
                 style={styles.notesInput}
               />
@@ -330,19 +332,19 @@ export default function QuickSessionScreen() {
               </View>
 
               <TouchableOpacity style={styles.logButton} onPress={handleLog}>
-                <Ionicons name="save-outline" size={18} color={colors.dark.background} />
+                <Ionicons name="save-outline" size={18} color={theme.background} />
                 <Text style={styles.logButtonText}>Log Session</Text>
               </TouchableOpacity>
             </View>
           ) : (
             <View style={styles.loggedBanner}>
-              <Ionicons name="checkmark-circle" size={20} color={colors.dark.volt} />
+              <Ionicons name="checkmark-circle" size={20} color={theme.volt} />
               <Text style={styles.loggedText}>Session Logged</Text>
             </View>
           )}
 
           <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-            <Ionicons name="home-outline" size={18} color={colors.dark.foreground} />
+            <Ionicons name="home-outline" size={18} color={theme.foreground} />
             <Text style={styles.backButtonText}>Back to Home</Text>
           </TouchableOpacity>
         </View>
@@ -358,13 +360,13 @@ export default function QuickSessionScreen() {
 
       <View style={styles.topBar}>
         <TouchableOpacity onPress={handleExitPress} style={styles.exitButton}>
-          <Ionicons name="arrow-back" size={20} color={colors.dark.foreground} />
+          <Ionicons name="arrow-back" size={20} color={theme.foreground} />
         </TouchableOpacity>
 
         <Text style={styles.xpCounter}>+{Math.round(accumulatedXP)} XP</Text>
 
         <View style={styles.streakPill}>
-          <Ionicons name="flame" size={14} color={colors.dark.orange} />
+          <Ionicons name="flame" size={14} color={theme.orange} />
           <Text style={styles.streakText}>{streakMultiplier}x</Text>
         </View>
       </View>
@@ -397,7 +399,7 @@ export default function QuickSessionScreen() {
       <View style={styles.controlsArea}>
         {!isRunning ? (
           <TouchableOpacity onPress={handleStart} style={styles.playButton} activeOpacity={0.8}>
-            <Ionicons name="play" size={36} color={colors.dark.background} style={{ marginLeft: 3 }} />
+            <Ionicons name="play" size={36} color={theme.background} style={{ marginLeft: 3 }} />
           </TouchableOpacity>
         ) : (
           <View style={styles.controlsRow}>
@@ -405,12 +407,12 @@ export default function QuickSessionScreen() {
               <Ionicons
                 name={isPaused ? 'play' : 'pause'}
                 size={28}
-                color={colors.dark.volt}
+                color={theme.volt}
                 style={isPaused ? { marginLeft: 2 } : undefined}
               />
             </TouchableOpacity>
             <TouchableOpacity onPress={handleFinish} style={styles.stopButton} activeOpacity={0.8}>
-              <Ionicons name="stop" size={32} color={colors.dark.background} />
+              <Ionicons name="stop" size={32} color={theme.background} />
             </TouchableOpacity>
           </View>
         )}
@@ -447,7 +449,7 @@ function LevelUpOverlay({ level, onDismiss }: { level: number; onDismiss: () => 
       <Animated.View style={[styles.levelUpOverlay, overlayStyle]}>
         <TouchableOpacity style={styles.levelUpDismiss} onPress={onDismiss} activeOpacity={1}>
           <Animated.View style={[styles.levelUpContent, contentStyle]}>
-            <Ionicons name="trophy" size={48} color={colors.dark.volt} />
+            <Ionicons name="trophy" size={48} color={theme.volt} />
             <Text style={styles.levelUpTitle}>LEVEL UP</Text>
             <Text style={styles.levelUpLevel}>Level {level}</Text>
           </Animated.View>
@@ -460,7 +462,7 @@ function LevelUpOverlay({ level, onDismiss }: { level: number; onDismiss: () => 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.dark.background,
+    backgroundColor: theme.background,
   },
   topBar: {
     flexDirection: 'row',
@@ -473,14 +475,14 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: colors.dark.surface2,
+    backgroundColor: theme.surface2,
     alignItems: 'center',
     justifyContent: 'center',
   },
   xpCounter: {
     fontSize: 15,
     fontWeight: '700' as const,
-    color: colors.dark.voltMuted,
+    color: theme.voltMuted,
   },
   streakPill: {
     flexDirection: 'row',
@@ -489,12 +491,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 12,
-    backgroundColor: colors.dark.orangeDim,
+    backgroundColor: theme.orangeDim,
   },
   streakText: {
     fontSize: 12,
     fontWeight: '700' as const,
-    color: colors.dark.orange,
+    color: theme.orange,
   },
   timerArea: {
     flex: 1,
@@ -505,7 +507,7 @@ const styles = StyleSheet.create({
   sessionLabel: {
     fontSize: 16,
     fontWeight: '900' as const,
-    color: colors.dark.foreground,
+    color: theme.foreground,
     letterSpacing: 3,
     marginBottom: 20,
   },
@@ -519,12 +521,12 @@ const styles = StyleSheet.create({
     width: 220,
     height: 220,
     borderRadius: 110,
-    backgroundColor: colors.dark.voltDim,
+    backgroundColor: theme.voltDim,
   },
   timerDisplay: {
     fontSize: 64,
     fontWeight: '900' as const,
-    color: colors.dark.volt,
+    color: theme.volt,
     fontVariant: ['tabular-nums'],
   },
   dividerRow: {
@@ -536,12 +538,12 @@ const styles = StyleSheet.create({
   dividerLine: {
     height: 1,
     width: 40,
-    backgroundColor: colors.dark.surface3,
+    backgroundColor: theme.surface3,
   },
   dividerLabel: {
     fontSize: 10,
     fontWeight: '600' as const,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     letterSpacing: 3,
   },
   xpRateRow: {
@@ -549,12 +551,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 10,
-    backgroundColor: colors.dark.surface1,
+    backgroundColor: theme.surface1,
   },
   xpRateText: {
     fontSize: 12,
     fontWeight: '600' as const,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
   },
   controlsArea: {
     alignItems: 'center',
@@ -564,10 +566,10 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: colors.dark.volt,
+    backgroundColor: theme.volt,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: colors.dark.volt,
+    shadowColor: theme.volt,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
     shadowRadius: 12,
@@ -582,9 +584,9 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: colors.dark.surface2,
+    backgroundColor: theme.surface2,
     borderWidth: 1,
-    borderColor: colors.dark.surface3,
+    borderColor: theme.surface3,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -592,10 +594,10 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: colors.dark.volt,
+    backgroundColor: theme.volt,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: colors.dark.volt,
+    shadowColor: theme.volt,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
     shadowRadius: 12,
@@ -611,13 +613,13 @@ const styles = StyleSheet.create({
   completeTitle: {
     fontSize: 28,
     fontWeight: '900' as const,
-    color: colors.dark.foreground,
+    color: theme.foreground,
     marginTop: 16,
     letterSpacing: 1,
   },
   completeSubtitle: {
     fontSize: 14,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     marginTop: 4,
     marginBottom: 24,
   },
@@ -629,21 +631,21 @@ const styles = StyleSheet.create({
   },
   statBox: {
     flex: 1,
-    backgroundColor: colors.dark.surface1,
+    backgroundColor: theme.surface1,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: colors.dark.surface3,
+    borderColor: theme.surface3,
     paddingVertical: 16,
     alignItems: 'center',
   },
   statValue: {
     fontSize: 22,
     fontWeight: '800' as const,
-    color: colors.dark.volt,
+    color: theme.volt,
   },
   statLabel: {
     fontSize: 12,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     marginTop: 4,
   },
   streakBonusPill: {
@@ -653,13 +655,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 12,
-    backgroundColor: colors.dark.orangeDim,
+    backgroundColor: theme.orangeDim,
     marginBottom: 16,
   },
   streakBonusText: {
     fontSize: 12,
     fontWeight: '600' as const,
-    color: colors.dark.orange,
+    color: theme.orange,
   },
   xpBarSection: {
     width: '100%',
@@ -672,15 +674,15 @@ const styles = StyleSheet.create({
   sectionLabel: {
     fontSize: 13,
     fontWeight: '600' as const,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     marginBottom: 8,
   },
   notesInput: {
-    backgroundColor: colors.dark.surface1,
+    backgroundColor: theme.surface1,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.dark.surface3,
-    color: colors.dark.foreground,
+    borderColor: theme.surface3,
+    color: theme.foreground,
     fontSize: 14,
     padding: 12,
     height: 80,
@@ -696,32 +698,32 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 10,
     borderRadius: 10,
-    backgroundColor: colors.dark.surface1,
+    backgroundColor: theme.surface1,
     borderWidth: 1,
-    borderColor: colors.dark.surface3,
+    borderColor: theme.surface3,
     alignItems: 'center',
   },
   difficultyButtonActive: {
-    backgroundColor: colors.dark.volt,
-    borderColor: colors.dark.volt,
+    backgroundColor: theme.volt,
+    borderColor: theme.volt,
   },
   difficultyButtonText: {
     fontSize: 13,
     fontWeight: '600' as const,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
   },
   difficultyButtonTextActive: {
-    color: colors.dark.background,
+    color: theme.background,
   },
   logButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: colors.dark.volt,
+    backgroundColor: theme.volt,
     borderRadius: 12,
     paddingVertical: 14,
-    shadowColor: colors.dark.volt,
+    shadowColor: theme.volt,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -730,41 +732,41 @@ const styles = StyleSheet.create({
   logButtonText: {
     fontSize: 15,
     fontWeight: '700' as const,
-    color: colors.dark.background,
+    color: theme.background,
   },
   loggedBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: colors.dark.surface1,
+    backgroundColor: theme.surface1,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.dark.surface3,
+    borderColor: theme.surface3,
     paddingVertical: 14,
     marginBottom: 16,
   },
   loggedText: {
     fontSize: 15,
     fontWeight: '600' as const,
-    color: colors.dark.volt,
+    color: theme.volt,
   },
   backButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: colors.dark.surface1,
+    backgroundColor: theme.surface1,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.dark.surface3,
+    borderColor: theme.surface3,
     paddingVertical: 14,
     width: '100%',
   },
   backButtonText: {
     fontSize: 15,
     fontWeight: '600' as const,
-    color: colors.dark.foreground,
+    color: theme.foreground,
   },
 
   levelUpOverlay: {
@@ -787,12 +789,12 @@ const styles = StyleSheet.create({
   levelUpTitle: {
     fontSize: 32,
     fontWeight: '900' as const,
-    color: colors.dark.volt,
+    color: theme.volt,
     letterSpacing: 4,
   },
   levelUpLevel: {
     fontSize: 20,
     fontWeight: '700' as const,
-    color: colors.dark.foreground,
+    color: theme.foreground,
   },
 });

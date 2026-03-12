@@ -55,6 +55,7 @@ function generateId(): string {
 }
 
 export default function OnboardingScreen() {
+  const { theme } = useTheme();
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const completeOnboarding = useUserStore((s) => s.completeOnboarding);
@@ -217,7 +218,7 @@ export default function OnboardingScreen() {
           <View style={styles.welcomeContainer}>
             <View style={styles.logoContainer}>
               <View style={styles.logoBg}>
-                <MaterialCommunityIcons name="boxing-glove" size={64} color={colors.dark.volt} />
+                <MaterialCommunityIcons name="boxing-glove" size={64} color={theme.volt} />
               </View>
             </View>
             <Text style={styles.welcomeTitle}>GETCLOCKED</Text>
@@ -228,7 +229,7 @@ export default function OnboardingScreen() {
               activeOpacity={0.8}
             >
               <Text style={styles.primaryButtonText}>GET STARTED</Text>
-              <Ionicons name="arrow-forward" size={20} color={colors.dark.background} />
+              <Ionicons name="arrow-forward" size={20} color={theme.background} />
             </TouchableOpacity>
           </View>
         )}
@@ -251,13 +252,13 @@ export default function OnboardingScreen() {
               activeOpacity={0.7}
             >
               <View style={styles.roleIconWrap}>
-                <Ionicons name="person" size={28} color={colors.dark.volt} />
+                <Ionicons name="person" size={28} color={theme.volt} />
               </View>
               <View style={styles.roleTextWrap}>
                 <Text style={styles.roleTitle}>I'M A FIGHTER</Text>
                 <Text style={styles.roleDesc}>Training solo or with a coach</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color={colors.dark.mutedForeground} />
+              <Ionicons name="chevron-forward" size={20} color={theme.mutedForeground} />
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -269,13 +270,13 @@ export default function OnboardingScreen() {
               activeOpacity={0.7}
             >
               <View style={styles.roleIconWrap}>
-                <Ionicons name="people" size={28} color={colors.dark.volt} />
+                <Ionicons name="people" size={28} color={theme.volt} />
               </View>
               <View style={styles.roleTextWrap}>
                 <Text style={styles.roleTitle}>I'M A COACH</Text>
                 <Text style={styles.roleDesc}>Train fighters, create programs</Text>
               </View>
-              <Ionicons name="chevron-forward" size={20} color={colors.dark.mutedForeground} />
+              <Ionicons name="chevron-forward" size={20} color={theme.mutedForeground} />
             </TouchableOpacity>
           </ScrollView>
         )}
@@ -290,7 +291,7 @@ export default function OnboardingScreen() {
               value={name}
               onChangeText={setName}
               placeholder="Your name"
-              placeholderTextColor={colors.dark.mutedForeground}
+              placeholderTextColor={theme.mutedForeground}
               autoFocus
               returnKeyType="done"
               onSubmitEditing={handleNext}
@@ -298,7 +299,7 @@ export default function OnboardingScreen() {
 
             <TouchableOpacity style={styles.primaryButton} onPress={handleNext} activeOpacity={0.8}>
               <Text style={styles.primaryButtonText}>Continue</Text>
-              <Ionicons name="arrow-forward" size={20} color={colors.dark.background} />
+              <Ionicons name="arrow-forward" size={20} color={theme.background} />
             </TouchableOpacity>
           </View>
         )}
@@ -324,14 +325,14 @@ export default function OnboardingScreen() {
                   <Text style={styles.optionDesc}>{level.desc}</Text>
                 </View>
                 {experience === level.id && (
-                  <Ionicons name="checkmark-circle" size={24} color={colors.dark.volt} />
+                  <Ionicons name="checkmark-circle" size={24} color={theme.volt} />
                 )}
               </TouchableOpacity>
             ))}
 
             <TouchableOpacity style={[styles.primaryButton, { marginTop: 16 }]} onPress={handleNext} activeOpacity={0.8}>
               <Text style={styles.primaryButtonText}>Continue</Text>
-              <Ionicons name="arrow-forward" size={20} color={colors.dark.background} />
+              <Ionicons name="arrow-forward" size={20} color={theme.background} />
             </TouchableOpacity>
           </ScrollView>
         )}
@@ -366,13 +367,13 @@ export default function OnboardingScreen() {
                         <MaterialCommunityIcons
                           name={item.iconName as any}
                           size={28}
-                          color={isSelected ? colors.dark.volt : colors.dark.mutedForeground}
+                          color={isSelected ? theme.volt : theme.mutedForeground}
                         />
                       ) : (
                         <Ionicons
                           name={item.iconName as any}
                           size={28}
-                          color={isSelected ? colors.dark.volt : colors.dark.mutedForeground}
+                          color={isSelected ? theme.volt : theme.mutedForeground}
                         />
                       )}
                       {showStar && (
@@ -383,7 +384,7 @@ export default function OnboardingScreen() {
                           <Ionicons
                             name={isPrimary ? "star" : "star-outline"}
                             size={14}
-                            color={isPrimary ? colors.dark.background : colors.dark.mutedForeground}
+                            color={isPrimary ? theme.background : theme.mutedForeground}
                           />
                         </TouchableOpacity>
                       )}
@@ -398,7 +399,7 @@ export default function OnboardingScreen() {
 
             <TouchableOpacity style={[styles.primaryButton, { marginTop: 16 }]} onPress={handleNext} activeOpacity={0.8}>
               <Text style={styles.primaryButtonText}>Continue</Text>
-              <Ionicons name="arrow-forward" size={20} color={colors.dark.background} />
+              <Ionicons name="arrow-forward" size={20} color={theme.background} />
             </TouchableOpacity>
           </ScrollView>
         )}
@@ -420,11 +421,11 @@ export default function OnboardingScreen() {
                 activeOpacity={0.7}
               >
                 <View style={styles.goalRow}>
-                  <Ionicons name={goal.iconName as any} size={22} color={colors.dark.volt} />
+                  <Ionicons name={goal.iconName as any} size={22} color={theme.volt} />
                   <Text style={styles.optionTitle}>{goal.label}</Text>
                 </View>
                 {goals.includes(goal.id) && (
-                  <Ionicons name="checkmark-circle" size={24} color={colors.dark.volt} />
+                  <Ionicons name="checkmark-circle" size={24} color={theme.volt} />
                 )}
               </TouchableOpacity>
             ))}
@@ -435,7 +436,7 @@ export default function OnboardingScreen() {
               activeOpacity={0.8}
             >
               <Text style={styles.primaryButtonText}>Continue</Text>
-              <Ionicons name="arrow-forward" size={20} color={colors.dark.background} />
+              <Ionicons name="arrow-forward" size={20} color={theme.background} />
             </TouchableOpacity>
           </ScrollView>
         )}
@@ -443,7 +444,7 @@ export default function OnboardingScreen() {
         {step === "complete" && (
           <View style={styles.welcomeContainer}>
             <View style={styles.completeIconWrap}>
-              <Ionicons name="checkmark-circle" size={80} color={colors.dark.volt} />
+              <Ionicons name="checkmark-circle" size={80} color={theme.volt} />
             </View>
             <Text style={styles.stepTitle}>You're All Set!</Text>
             <Text style={styles.stepSubtitle}>
@@ -456,7 +457,7 @@ export default function OnboardingScreen() {
               activeOpacity={0.8}
             >
               <Text style={styles.primaryButtonText}>{isCompleting ? "Loading..." : "LET'S GO"}</Text>
-              <Ionicons name="flash" size={20} color={colors.dark.background} />
+              <Ionicons name="flash" size={20} color={theme.background} />
             </TouchableOpacity>
           </View>
         )}
@@ -468,7 +469,7 @@ export default function OnboardingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.dark.background,
+    backgroundColor: theme.background,
   },
   progressContainer: {
     flexDirection: "row" as const,
@@ -483,14 +484,14 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   progressDotActive: {
-    backgroundColor: colors.dark.volt,
+    backgroundColor: theme.volt,
     width: 24,
   },
   progressDotDone: {
-    backgroundColor: colors.dark.voltMuted,
+    backgroundColor: theme.voltMuted,
   },
   progressDotInactive: {
-    backgroundColor: colors.dark.surface3,
+    backgroundColor: theme.surface3,
   },
   content: {
     flex: 1,
@@ -508,27 +509,27 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 30,
-    backgroundColor: colors.dark.voltDim,
+    backgroundColor: theme.voltDim,
     justifyContent: "center" as const,
     alignItems: "center" as const,
   },
   welcomeTitle: {
     fontSize: 36,
     fontWeight: "900" as const,
-    color: colors.dark.foreground,
+    color: theme.foreground,
     letterSpacing: 3,
     marginBottom: 8,
   },
   welcomeSubtitle: {
     fontSize: 16,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     marginBottom: 48,
   },
   primaryButton: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
     justifyContent: "center" as const,
-    backgroundColor: colors.dark.volt,
+    backgroundColor: theme.volt,
     paddingVertical: 16,
     paddingHorizontal: 32,
     borderRadius: 14,
@@ -538,7 +539,7 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     fontSize: 16,
     fontWeight: "800" as const,
-    color: colors.dark.background,
+    color: theme.background,
     letterSpacing: 1,
   },
   stepScrollView: {
@@ -551,13 +552,13 @@ const styles = StyleSheet.create({
   stepTitle: {
     fontSize: 26,
     fontWeight: "900" as const,
-    color: colors.dark.foreground,
+    color: theme.foreground,
     textAlign: "center" as const,
     marginBottom: 6,
   },
   stepSubtitle: {
     fontSize: 15,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     textAlign: "center" as const,
     marginBottom: 28,
     lineHeight: 22,
@@ -565,22 +566,22 @@ const styles = StyleSheet.create({
   roleCard: {
     flexDirection: "row" as const,
     alignItems: "center" as const,
-    backgroundColor: colors.dark.surface1,
+    backgroundColor: theme.surface1,
     borderWidth: 2,
-    borderColor: colors.dark.surface3,
+    borderColor: theme.surface3,
     borderRadius: 16,
     padding: 20,
     marginBottom: 14,
   },
   roleCardActive: {
-    borderColor: colors.dark.volt,
-    backgroundColor: colors.dark.voltDim,
+    borderColor: theme.volt,
+    backgroundColor: theme.voltDim,
   },
   roleIconWrap: {
     width: 56,
     height: 56,
     borderRadius: 14,
-    backgroundColor: colors.dark.voltDim,
+    backgroundColor: theme.voltDim,
     justifyContent: "center" as const,
     alignItems: "center" as const,
     marginRight: 16,
@@ -591,22 +592,22 @@ const styles = StyleSheet.create({
   roleTitle: {
     fontSize: 17,
     fontWeight: "800" as const,
-    color: colors.dark.foreground,
+    color: theme.foreground,
     marginBottom: 2,
   },
   roleDesc: {
     fontSize: 13,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
   },
   nameInput: {
-    backgroundColor: colors.dark.surface1,
+    backgroundColor: theme.surface1,
     borderWidth: 1,
-    borderColor: colors.dark.surface3,
+    borderColor: theme.surface3,
     borderRadius: 14,
     paddingVertical: 16,
     paddingHorizontal: 20,
     fontSize: 18,
-    color: colors.dark.foreground,
+    color: theme.foreground,
     textAlign: "center" as const,
     marginBottom: 24,
   },
@@ -614,16 +615,16 @@ const styles = StyleSheet.create({
     flexDirection: "row" as const,
     alignItems: "center" as const,
     justifyContent: "space-between" as const,
-    backgroundColor: colors.dark.surface1,
+    backgroundColor: theme.surface1,
     borderWidth: 1,
-    borderColor: colors.dark.surface3,
+    borderColor: theme.surface3,
     borderRadius: 14,
     padding: 16,
     marginBottom: 10,
   },
   optionCardActive: {
-    borderColor: colors.dark.volt,
-    backgroundColor: colors.dark.voltDim,
+    borderColor: theme.volt,
+    backgroundColor: theme.voltDim,
   },
   optionTextWrap: {
     flex: 1,
@@ -631,11 +632,11 @@ const styles = StyleSheet.create({
   optionTitle: {
     fontSize: 16,
     fontWeight: "700" as const,
-    color: colors.dark.foreground,
+    color: theme.foreground,
   },
   optionDesc: {
     fontSize: 13,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
     marginTop: 2,
   },
   equipmentGrid: {
@@ -645,15 +646,15 @@ const styles = StyleSheet.create({
   },
   equipmentCard: {
     width: (SCREEN_WIDTH - 60) / 2,
-    backgroundColor: colors.dark.surface1,
+    backgroundColor: theme.surface1,
     borderWidth: 1,
-    borderColor: colors.dark.surface3,
+    borderColor: theme.surface3,
     borderRadius: 14,
     padding: 16,
   },
   equipmentCardActive: {
-    borderColor: colors.dark.volt,
-    backgroundColor: colors.dark.voltDim,
+    borderColor: theme.volt,
+    backgroundColor: theme.voltDim,
   },
   equipmentIconRow: {
     flexDirection: "row" as const,
@@ -664,21 +665,21 @@ const styles = StyleSheet.create({
   equipmentLabel: {
     fontSize: 13,
     fontWeight: "600" as const,
-    color: colors.dark.mutedForeground,
+    color: theme.mutedForeground,
   },
   equipmentLabelActive: {
-    color: colors.dark.foreground,
+    color: theme.foreground,
   },
   starButton: {
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: colors.dark.surface3,
+    backgroundColor: theme.surface3,
     justifyContent: "center" as const,
     alignItems: "center" as const,
   },
   starButtonActive: {
-    backgroundColor: colors.dark.volt,
+    backgroundColor: theme.volt,
   },
   goalRow: {
     flexDirection: "row" as const,
