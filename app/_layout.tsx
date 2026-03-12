@@ -9,59 +9,69 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { queryClient } from "@/lib/query-client";
 import { ToastContainer } from "@/hooks/useToast";
 import { usePresetSeeding } from "@/hooks/usePresetSeeding";
-import colors from "@/constants/colors";
+import { ThemeProvider, useTheme } from "@/contexts/ThemeContext";
+import { useThemedColors } from "@/hooks/useThemedColors";
 
 SplashScreen.preventAutoHideAsync();
 
-const headerStyles = {
-  headerStyle: { backgroundColor: colors.dark.background },
-  headerTintColor: colors.dark.volt,
-  headerTitleStyle: { color: colors.dark.foreground },
-  contentStyle: { backgroundColor: colors.dark.background },
-};
-
 function RootLayoutNav() {
+  const { effectiveTheme } = useTheme();
+  const colors = useThemedColors();
+
+  const headerStyles = {
+    headerStyle: { backgroundColor: colors.background },
+    headerTintColor: colors.primary,
+    headerTitleStyle: { color: colors.text },
+    contentStyle: { backgroundColor: colors.background },
+  };
+
   return (
-    <Stack
-      screenOptions={{
-        headerBackTitle: "Back",
-        ...headerStyles,
-      }}
-    >
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen
-        name="onboarding"
-        options={{ headerShown: false, gestureEnabled: false }}
+    <>
+      <StatusBar 
+        barStyle={effectiveTheme === 'dark' ? 'light-content' : 'dark-content'} 
+        backgroundColor={colors.background} 
       />
-      <Stack.Screen
-        name="build"
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="history"
-        options={{ headerShown: false }}
-      />
-      <Stack.Screen
-        name="workout/[id]"
-        options={{ headerShown: false, gestureEnabled: false }}
-      />
-      <Stack.Screen
-        name="quick-session"
-        options={{ headerShown: false, gestureEnabled: false }}
-      />
-      <Stack.Screen
-        name="settings"
-        options={{ title: "Settings" }}
-      />
-      <Stack.Screen
-        name="gloves"
-        options={{ title: "Gloves" }}
-      />
-      <Stack.Screen
-        name="edit-profile"
-        options={{ headerShown: false }}
-      />
-    </Stack>
+      <Stack
+        screenOptions={{
+          headerBackTitle: "Back",
+          ...headerStyles,
+        }}
+      >
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="onboarding"
+          options={{ headerShown: false, gestureEnabled: false }}
+        />
+        <Stack.Screen
+          name="build"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="history"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="workout/[id]"
+          options={{ headerShown: false, gestureEnabled: false }}
+        />
+        <Stack.Screen
+          name="quick-session"
+          options={{ headerShown: false, gestureEnabled: false }}
+        />
+        <Stack.Screen
+          name="settings"
+          options={{ title: "Settings" }}
+        />
+        <Stack.Screen
+          name="gloves"
+          options={{ title: "Gloves" }}
+        />
+        <Stack.Screen
+          name="edit-profile"
+          options={{ headerShown: false }}
+        />
+      </Stack>
+    </>
   );
 }
 
@@ -74,15 +84,24 @@ export default function RootLayout() {
 
   return (
     <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.dark.background }}>
-          <KeyboardProvider>
-            <StatusBar barStyle="light-content" backgroundColor={colors.dark.background} />
-            <RootLayoutNav />
-            <ToastContainer />
-          </KeyboardProvider>
-        </GestureHandlerRootView>
-      </QueryClientProvider>
+      <ThemeProvider>
+        <QueryClientProvider client={queryClient}>
+          <RootLayoutContent />
+        </QueryClientProvider>
+      </ThemeProvider>
     </ErrorBoundary>
+  );
+}
+
+function RootLayoutContent() {
+  const colors = useThemedColors();
+
+  return (
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.background }}>
+      <KeyboardProvider>
+        <RootLayoutNav />
+        <ToastContainer />
+      </KeyboardProvider>
+    </GestureHandlerRootView>
   );
 }

@@ -1,98 +1,212 @@
-const colors = {
+/**
+ * Color palette for Clocked app
+ * Supports both dark and light themes
+ */
+
+export const colors = {
   dark: {
-    background: '#0A0A0A',
-    surface1: '#111111',
-    surface2: '#1A1A1A',
-    surface3: '#242424',
-    surface4: '#2E2E2E',
-
-    foreground: '#F5F5F5',
-    mutedForeground: '#888888',
-
-    volt: '#CCFF00',
-    voltDim: 'rgba(204, 255, 0, 0.15)',
-    voltMuted: 'rgba(204, 255, 0, 0.4)',
-
-    border: '#2A2A2A',
-    borderLight: '#333333',
-
-    red: '#FF4444',
-    redDim: 'rgba(255, 68, 68, 0.15)',
-    orange: '#FF8C00',
-    orangeDim: 'rgba(255, 140, 0, 0.15)',
-    blue: '#4488FF',
-    blueDim: 'rgba(68, 136, 255, 0.15)',
-    purple: '#AA66FF',
-    purpleDim: 'rgba(170, 102, 255, 0.15)',
-    green: '#44CC88',
-    greenDim: 'rgba(68, 204, 136, 0.15)',
-    amber: '#FFAA00',
-    amberDim: 'rgba(255, 170, 0, 0.15)',
-    yellow: '#FFD700',
-    yellowDim: 'rgba(255, 215, 0, 0.15)',
-
-    tabIconDefault: '#666666',
-    tabIconSelected: '#CCFF00',
-
-    prestigeRookie: '#94A3B8',
-    prestigeBeginner: '#CCFF00',
-    prestigeIntermediate: '#60A5FA',
-    prestigeAdvanced: '#C084FC',
-    prestigePro: '#FBBF24',
-
-    badgeStreak: '#F97316',
-    badgeCombo: '#3B82F6',
-    badgeVolume: '#22C55E',
-    badgeTime: '#A855F7',
-    badgeConditioning: '#EF4444',
-    badgeInWorkout: '#EAB308',
-    badgePrestige: '#F59E0B',
-
-    difficultyRookie: '#94A3B8',
-    difficultyBeginner: '#22C55E',
-    difficultyIntermediate: '#3B82F6',
-    difficultyAdvanced: '#A855F7',
-    difficultyPro: '#EF4444',
+    // Backgrounds
+    background: '#0a0a0a',
+    backgroundSecondary: '#121212',
+    backgroundTertiary: '#1a1a1a',
+    surface: '#1e1e1e',
+    surfaceElevated: '#2a2a2a',
+    
+    // Text
+    text: '#ffffff',
+    textSecondary: '#a0a0a0',
+    textTertiary: '#666666',
+    textMuted: '#4a4a4a',
+    
+    // Primary brand colors (boxing red/orange)
+    primary: '#ff4444',
+    primaryLight: '#ff6666',
+    primaryDark: '#cc0000',
+    
+    // Accent colors
+    accent: '#ff8800',
+    accentLight: '#ffaa44',
+    accentDark: '#cc6600',
+    
+    // Status colors
+    success: '#00cc44',
+    successLight: '#00ff55',
+    successDark: '#009933',
+    
+    warning: '#ffaa00',
+    warningLight: '#ffcc44',
+    warningDark: '#cc8800',
+    
+    error: '#ff3333',
+    errorLight: '#ff6666',
+    errorDark: '#cc0000',
+    
+    info: '#3399ff',
+    infoLight: '#66bbff',
+    infoDark: '#0066cc',
+    
+    // UI elements
+    border: '#2a2a2a',
+    borderLight: '#3a3a3a',
+    borderDark: '#1a1a1a',
+    
+    divider: '#2a2a2a',
+    
+    // Interactive elements
+    buttonPrimary: '#ff4444',
+    buttonPrimaryHover: '#ff6666',
+    buttonPrimaryDisabled: '#663333',
+    
+    buttonSecondary: '#2a2a2a',
+    buttonSecondaryHover: '#3a3a3a',
+    buttonSecondaryDisabled: '#1a1a1a',
+    
+    // Overlays
+    overlay: 'rgba(0, 0, 0, 0.7)',
+    overlayLight: 'rgba(0, 0, 0, 0.5)',
+    overlayHeavy: 'rgba(0, 0, 0, 0.9)',
+    
+    // Special effects
+    glow: 'rgba(255, 68, 68, 0.3)',
+    shadow: 'rgba(0, 0, 0, 0.5)',
+    
+    // XP & Gamification
+    xpBar: '#ffaa00',
+    xpBarBackground: '#2a2a2a',
+    
+    // Tiers (Rookie, Contender, Pro, BMF)
+    tierRookie: '#888888',
+    tierContender: '#3399ff',
+    tierPro: '#9944ff',
+    tierBMF: '#ffaa00',
+    
+    // Card backgrounds
+    cardBackground: '#1a1a1a',
+    cardBackgroundHover: '#222222',
+    cardBorder: '#2a2a2a',
+    
+    // Input fields
+    input: '#2a2a2a',
+    inputBorder: '#3a3a3a',
+    inputFocus: '#ff4444',
+    inputPlaceholder: '#666666',
+    
+    // Tab bar
+    tabBarBackground: '#121212',
+    tabBarActive: '#ff4444',
+    tabBarInactive: '#666666',
+  },
+  
+  light: {
+    // Backgrounds
+    background: '#ffffff',
+    backgroundSecondary: '#f8f8f8',
+    backgroundTertiary: '#f0f0f0',
+    surface: '#ffffff',
+    surfaceElevated: '#fafafa',
+    
+    // Text
+    text: '#0a0a0a',
+    textSecondary: '#4a4a4a',
+    textTertiary: '#777777',
+    textMuted: '#999999',
+    
+    // Primary brand colors (boxing red/orange) - slightly adjusted for light mode
+    primary: '#e63939',
+    primaryLight: '#ff5555',
+    primaryDark: '#b82e2e',
+    
+    // Accent colors
+    accent: '#ff7700',
+    accentLight: '#ff9933',
+    accentDark: '#cc5500',
+    
+    // Status colors
+    success: '#00aa33',
+    successLight: '#00cc44',
+    successDark: '#008829',
+    
+    warning: '#ff9900',
+    warningLight: '#ffbb33',
+    warningDark: '#cc7700',
+    
+    error: '#dd2222',
+    errorLight: '#ff4444',
+    errorDark: '#aa1111',
+    
+    info: '#2288ee',
+    infoLight: '#4499ff',
+    infoDark: '#0066cc',
+    
+    // UI elements
+    border: '#e0e0e0',
+    borderLight: '#eeeeee',
+    borderDark: '#cccccc',
+    
+    divider: '#e8e8e8',
+    
+    // Interactive elements
+    buttonPrimary: '#e63939',
+    buttonPrimaryHover: '#ff5555',
+    buttonPrimaryDisabled: '#ffcccc',
+    
+    buttonSecondary: '#f0f0f0',
+    buttonSecondaryHover: '#e8e8e8',
+    buttonSecondaryDisabled: '#f8f8f8',
+    
+    // Overlays
+    overlay: 'rgba(0, 0, 0, 0.4)',
+    overlayLight: 'rgba(0, 0, 0, 0.2)',
+    overlayHeavy: 'rgba(0, 0, 0, 0.7)',
+    
+    // Special effects
+    glow: 'rgba(230, 57, 57, 0.2)',
+    shadow: 'rgba(0, 0, 0, 0.1)',
+    
+    // XP & Gamification
+    xpBar: '#ff9900',
+    xpBarBackground: '#e8e8e8',
+    
+    // Tiers (Rookie, Contender, Pro, BMF)
+    tierRookie: '#777777',
+    tierContender: '#2288ee',
+    tierPro: '#8833ee',
+    tierBMF: '#ff9900',
+    
+    // Card backgrounds
+    cardBackground: '#ffffff',
+    cardBackgroundHover: '#f8f8f8',
+    cardBorder: '#e8e8e8',
+    
+    // Input fields
+    input: '#f8f8f8',
+    inputBorder: '#e0e0e0',
+    inputFocus: '#e63939',
+    inputPlaceholder: '#999999',
+    
+    // Tab bar
+    tabBarBackground: '#ffffff',
+    tabBarActive: '#e63939',
+    tabBarInactive: '#777777',
+  },
+  
+  // Common colors (same in both themes)
+  common: {
+    black: '#000000',
+    white: '#ffffff',
+    transparent: 'transparent',
+    
+    // Combo notation colors (remain consistent across themes)
+    combo1: '#ff4444', // Jab
+    combo2: '#ff8800', // Cross
+    combo3: '#00ccff', // Lead Hook
+    combo4: '#00ff88', // Rear Hook
+    combo5: '#ff44ff', // Lead Uppercut
+    combo6: '#ffff44', // Rear Uppercut
+    combo7: '#8844ff', // Lead Body Shot
+    combo8: '#44ff88', // Rear Body Shot
+    combo9: '#ff4488', // Duck/Slip/Defensive
   },
 };
 
-export default colors;
-
-export const PRESTIGE_COLORS: Record<string, string> = {
-  rookie: colors.dark.prestigeRookie,
-  beginner: colors.dark.prestigeBeginner,
-  intermediate: colors.dark.prestigeIntermediate,
-  advanced: colors.dark.prestigeAdvanced,
-  pro: colors.dark.prestigePro,
-};
-
-export const BADGE_CATEGORY_COLORS_NATIVE: Record<string, { bg: string; text: string }> = {
-  streak: { bg: 'rgba(249, 115, 22, 0.2)', text: colors.dark.badgeStreak },
-  combo: { bg: 'rgba(59, 130, 246, 0.2)', text: colors.dark.badgeCombo },
-  volume: { bg: 'rgba(34, 197, 94, 0.2)', text: colors.dark.badgeVolume },
-  time: { bg: 'rgba(168, 85, 247, 0.2)', text: colors.dark.badgeTime },
-  conditioning: { bg: 'rgba(239, 68, 68, 0.2)', text: colors.dark.badgeConditioning },
-  in_workout: { bg: 'rgba(234, 179, 8, 0.2)', text: colors.dark.badgeInWorkout },
-  prestige: { bg: 'rgba(245, 158, 11, 0.2)', text: colors.dark.badgePrestige },
-  mastery:            { bg: 'rgba(139, 92, 246, 0.2)', text: '#A78BFA' },
-  overflow:           { bg: 'rgba(6, 182, 212, 0.2)',  text: '#22D3EE' },
-  legacy:             { bg: 'rgba(203, 213, 225, 0.2)',text: '#E2E8F0' },
-  ultra_combo:        { bg: 'rgba(59, 130, 246, 0.2)', text: '#93C5FD' },
-  ultra_conditioning: { bg: 'rgba(244, 63, 94, 0.2)',  text: '#FB7185' },
-  ultra_time:         { bg: 'rgba(99, 102, 241, 0.2)', text: '#A5B4FC' },
-  ultra_volume:       { bg: 'rgba(16, 185, 129, 0.2)', text: '#6EE7B7' },
-  ultra_cardio:       { bg: 'rgba(20, 184, 166, 0.2)', text: '#5EEAD4' },
-  consistency:        { bg: 'rgba(132, 204, 22, 0.2)', text: '#BEF264' },
-  milestones:         { bg: 'rgba(217, 70, 239, 0.2)', text: '#E879F9' },
-  performance:        { bg: 'rgba(14, 165, 233, 0.2)', text: '#38BDF8' },
-  ultra_streak:       { bg: 'rgba(234, 88, 12, 0.2)',  text: '#FB923C' },
-  combat_mastery:     { bg: 'rgba(220, 38, 38, 0.2)',  text: '#FCA5A5' },
-};
-
-export const DIFFICULTY_COLORS: Record<string, string> = {
-  rookie: colors.dark.difficultyRookie,
-  beginner: colors.dark.difficultyBeginner,
-  intermediate: colors.dark.difficultyIntermediate,
-  advanced: colors.dark.difficultyAdvanced,
-  pro: colors.dark.difficultyPro,
-};
+export type ColorScheme = typeof colors.dark;

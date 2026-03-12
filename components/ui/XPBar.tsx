@@ -1,122 +1,143 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
-import colors, { PRESTIGE_COLORS } from '@/constants/colors';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+  Easing,
+} from 'react-native-reanimated';
+import { useThemedColors } from '@/hooks/useThemedColors';
 
 interface XPBarProps {
-  prestige: string;
-  level: number;
   currentXP: number;
   requiredXP: number;
-  xpString?: string;
-  showRank?: boolean;
-  rankingName?: string;
-  prestigeName?: string;
+  level: number;
+  tier: string;
+  showLabel?: boolean;
 }
 
 export function XPBar({
-  prestige,
-  level,
   currentXP,
   requiredXP,
-  xpString,
-  showRank = true,
-  rankingName,
-  prestigeName,
+  level,
+  tier,
+  showLabel = true,
 }: XPBarProps) {
-  const progress = requiredXP > 0 ? Math.min(1, currentXP / requiredXP) : 0;
-  const barColor = PRESTIGE_COLORS[prestige] || colors.dark.volt;
-  const displayXP = xpString || `${Math.floor(currentXP).toLocaleString()} / ${requiredXP.toLocaleString()} XP`;
-  const isMaxLevel = level >= 100;
+  const colors = useThemedColors();
+  const progress = useSharedValue(0);
+  const percentage = Math.min((currentXP / requiredXP) * 100, 100);
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    width: withTiming(`${progress * 100}%` as any, { duration: 500 }),
-  }));
+  useEffect(() => {
+    progress.value = withTiming(percentage, {
+      duration: 800,
+      easing: Easing.bezier(0.25, 0.1, 0.25, 1),
+    });
+  }, [percentage]);
+
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      width: `${progress.value}%`,
+    };
+  });
+
+  const getTierColor = () => {
+    switch (tier.toLowerCase()) {
+      case 'rookie':
+        return colors.tierRookie;
+      case 'contender':
+        return colors.tierContender;
+      case 'pro':
+        return colors.tierPro;
+      case 'bmf':
+        return colors.tierBMF;
+      default:
+        return colors.primary;
+    }
+  };
+
+  const tierColor = getTierColor();
 
   return (
     <View style={styles.container}>
-      {showRank && (
+      {showLabel && (
         <View style={styles.header}>
-          <View style={styles.labelRow}>
-            {prestigeName && (
-              <Text style={[styles.prestigeLabel, { color: barColor }]}>
-                {prestigeName.toUpperCase()}
-              </Text>
-            )}
-            {rankingName && (
-              <>
-                <Text style={styles.dot}>·</Text>
-                <Text style={styles.rankingLabel}>{rankingName}</Text>
-              </>
-            )}
-            <Text style={styles.dot}>·</Text>
-            {isMaxLevel ? (
-              <Text style={[styles.levelLabel, { color: colors.dark.amber }]}>MAX LEVEL</Text>
-            ) : (
-              <Text style={[styles.levelLabel, { color: barColor }]}>Lvl {level}</Text>
-            )}
-          </View>
-          <Text style={styles.xpText}>{displayXP}</Text>
+          <Text style={[styles.tierText, { color: tierColor }]}>
+            {tier} • Level {level}
+          </Text>
+          <Text style={[styles.xpText, { color: colors.textSecondary }]}>
+            {currentXP} / {requiredXP} XP
+          </Text>
         </View>
       )}
-      <View style={styles.barBackground}>
+      
+      <View style={[styles.barContainer, { backgroundColor: colors.xpBarBackground }]}>
         <Animated.View
           style={[
             styles.barFill,
-            { backgroundColor: barColor },
             animatedStyle,
+            { backgroundColor: colors.xpBar },
           ]}
         />
+        <View style={[styles.barGlow, animatedStyle, { backgroundColor: colors.xpBar, opacity: 0.3 }]} />
       </View>
+
+      {showLabel && (
+        <Text style={[styles.percentageText, { color: colors.textTertiary }]}>
+          {Math.floor(percentage)}% to next level
+        </Text>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    width: '100%',
+    gap: 8,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 6,
   },
-  labelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  prestigeLabel: {
-    fontSize: 11,
-    fontWeight: '700' as const,
+  tierText: {
+    fontSize: 14,
+    fontWeight: '700',
+    textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
-  dot: {
-    fontSize: 11,
-    color: colors.dark.mutedForeground,
-  },
-  rankingLabel: {
-    fontSize: 11,
-    fontWeight: '500' as const,
-    color: colors.dark.foreground,
-  },
-  levelLabel: {
-    fontSize: 11,
-    fontWeight: '700' as const,
-  },
   xpText: {
-    fontSize: 11,
-    color: colors.dark.mutedForeground,
+    fontSize: 13,
+    fontWeight: '600',
   },
-  barBackground: {
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.dark.surface3,
+  barContainer: {
+    height: 12,
+    borderRadius: 6,
     overflow: 'hidden',
+    position: 'relative',
   },
   barFill: {
-    height: '100%',
-    borderRadius: 3,
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    borderRadius: 6,
+  },
+  barGlow: {
+    position: 'absolute',
+    left: 0,
+    top: -4,
+    bottom: -4,
+    borderRadius: 8,
+    shadowColor: '#ffaa00',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  percentageText: {
+    fontSize: 12,
+    fontWeight: '500',
+    textAlign: 'center',
   },
 });
